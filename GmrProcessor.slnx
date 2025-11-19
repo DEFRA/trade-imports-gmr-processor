@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src\GmrProcessor\GmrProcessor.csproj" />
+  <Project Path="tests\GmrProcessor.Tests\GmrProcessor.Tests.csproj" />
+</Solution>
