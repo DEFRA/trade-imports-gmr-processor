@@ -33,7 +33,10 @@ services:
     restart: always
 
   gmr-processor:
-    build: ./
+    build:
+      args:
+        DEFRA_NUGET_PAT: ${DEFRA_NUGET_PAT}
+      context: ./
     ports:
       - "8080:8080"
     links:
