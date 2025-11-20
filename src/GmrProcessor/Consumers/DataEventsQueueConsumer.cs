@@ -5,6 +5,7 @@ using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Extensions;
+using GmrProcessor.Processors;
 using GmrProcessor.Utils;
 using Microsoft.Extensions.Options;
 
@@ -13,14 +14,15 @@ namespace GmrProcessor.Consumers;
 public sealed class DataEventsQueueConsumer(
     ILogger<DataEventsQueueConsumer> logger,
     IAmazonSQS sqsClient,
-    IOptions<DataEventsQueueConsumerOptions> options
+    IOptions<DataEventsQueueConsumerOptions> options,
+    IGtoImportPreNotificationProcessor importPreNotificationProcessor
 ) : SqsConsumer<DataEventsQueueConsumer>(logger, sqsClient, options.Value.QueueName)
 {
     private readonly ILogger<DataEventsQueueConsumer> _logger = logger;
 
     protected override int WaitTimeSeconds { get; } = options.Value.WaitTimeSeconds;
 
-    protected override Task ProcessMessageAsync(Message message, CancellationToken stoppingToken)
+    protected override async Task ProcessMessageAsync(Message message, CancellationToken stoppingToken)
     {
         var json = MessageDeserializer.Deserialize<JsonElement>(message.Body, message.GetContentEncoding());
 
@@ -30,13 +32,8 @@ public sealed class DataEventsQueueConsumer(
         {
             case ResourceEventResourceTypes.ImportPreNotification:
                 var importPreNotification = json.Deserialize<ResourceEvent<ImportPreNotification>>()!;
-                _logger.LogInformation(
-                    "ImportPreNotification received: {ResourceId}",
-                    importPreNotification.ResourceId
-                );
+                await importPreNotificationProcessor.ProcessAsync(importPreNotification, stoppingToken);
                 break;
         }
-
-        return Task.CompletedTask;
     }
 }

@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Amazon.SQS.Model;
 using AutoFixture;
-using Defra.TradeImportsDataApi.Domain.Events;
 using FluentAssertions;
 using GmrProcessor.Config;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,16 +12,16 @@ namespace GmrProcessor.IntegrationTests.Consumers;
 public class TransitImportsTests : IntegrationTestBase
 {
     [Fact]
-    public async Task WhenCustomsDeclarationReceived_ShouldBeProcessed()
+    public async Task WhenImportPreNotificationReceived_ShouldBeProcessed()
     {
         var config = ServiceProvider.GetRequiredService<IOptions<DataEventsQueueConsumerOptions>>().Value;
         var (sqsClient, queueUrl) = await GetSqsClient(config.QueueName);
 
         var expectedChed = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        var customsDeclaration = ImportPreNotificationFixtures.ImportPreNotificationFixture().Create();
+        var importPreNotification = ImportPreNotificationFixtures.ImportPreNotificationFixture().Create();
         var resourceEvent = ImportPreNotificationFixtures
-            .ImportPreNotificationResourceEventFixture(customsDeclaration)
+            .ImportPreNotificationResourceEventFixture(importPreNotification)
             .With(r => r.ResourceId, expectedChed)
             .Create();
 
@@ -33,11 +32,7 @@ public class TransitImportsTests : IntegrationTestBase
             {
                 {
                     "ResourceType",
-                    new MessageAttributeValue
-                    {
-                        DataType = "String",
-                        StringValue = ResourceEventResourceTypes.CustomsDeclaration,
-                    }
+                    new MessageAttributeValue { DataType = "String", StringValue = resourceEvent.ResourceType }
                 },
             },
             QueueUrl = queueUrl,

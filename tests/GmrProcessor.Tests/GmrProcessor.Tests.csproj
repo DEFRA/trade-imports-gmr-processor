@@ -29,5 +29,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\GmrProcessor\GmrProcessor.csproj" />
+    <ProjectReference Include="..\TestFixtures\TestFixtures.csproj" />
   </ItemGroup>
 </Project>
