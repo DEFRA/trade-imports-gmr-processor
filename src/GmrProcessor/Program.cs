@@ -38,6 +38,9 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddTransient<ProxyHttpMessageHandler>();
     builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
 
+    builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
+    builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
+
     builder.Services.AddHeaderPropagation(options =>
     {
         var traceHeader = builder.Configuration.GetValue<string>("TraceHeader");

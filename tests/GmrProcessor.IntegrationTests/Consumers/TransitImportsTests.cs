@@ -74,6 +74,6 @@ public class TransitImportsTests : IntegrationTestBase
             TestContext.Current.CancellationToken
         );
 
-        importTransitCreated.Should().NotBeNull("Polling item was not created");
+        importTransitCreated.Should().NotBeNull("Import Transit was not created");
     }
 }

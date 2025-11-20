@@ -54,13 +54,10 @@ public abstract class IntegrationTestBase
         sc.Configure<MongoConfig>(Configuration.GetSection("Mongo"));
         sc.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
         sc.AddSingleton<IMongoContext, MongoContext>();
-        //sc.AddSingleton<MongoDbInitializer>();
 
         ServiceProvider = sc.BuildServiceProvider();
 
         Mongo = ServiceProvider.GetRequiredService<IMongoContext>();
-        // var initializer = ServiceProvider.GetRequiredService<MongoDbInitializer>();
-        // initializer.Init().Wait();
     }
 
     protected IMongoContext MongoContext => ServiceProvider.GetRequiredService<IMongoContext>();

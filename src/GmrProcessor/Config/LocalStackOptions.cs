@@ -22,4 +22,7 @@ public class LocalStackOptions
 
     [ConfigurationKeyName("USE_LOCALSTACK")]
     public bool? UseLocalStack { get; init; } = false;
+
+    public override string ToString() =>
+        $"LocalStackOptions {{ AccessKeyId = {AccessKeyId}, AwsRegion = {AwsRegion}, SecretAccessKey = {(SecretAccessKey is null ? "null" : "***")}, SnsEndpoint = {SnsEndpoint}, SqsEndpoint = {SqsEndpoint}, UseLocalStack = {UseLocalStack} }}";
 }

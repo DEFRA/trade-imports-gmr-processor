@@ -42,7 +42,7 @@ COPY tests/ tests/
 RUN dotnet csharpier check .
 
 # unit test and code coverage (exclude integration tests)
-RUN dotnet test --filter "Category!=Integration"
+RUN dotnet test --filter "Category!=IntegrationTests"
 
 FROM build AS publish
 RUN dotnet publish src/GmrProcessor -c Release -o /app/publish /p:UseAppHost=false
