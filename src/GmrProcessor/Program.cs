@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using FluentValidation;
 using GmrProcessor.Config;
+using GmrProcessor.Consumers;
+using GmrProcessor.Extensions;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
@@ -47,6 +49,10 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
     builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+
+    builder.Services.AddSqsClient();
+
+    builder.Services.AddHostedService<DataEventsQueueConsumer>();
 
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();

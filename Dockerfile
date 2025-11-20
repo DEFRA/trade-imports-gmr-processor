@@ -14,15 +14,24 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Restore tools
+ARG DEFRA_NUGET_PAT
+ENV DEFRA_NUGET_PAT=${DEFRA_NUGET_PAT}
+
 COPY .config/dotnet-tools.json .config/
 COPY .csharpierrc .csharpierrc
 RUN dotnet tool restore
 
 # Copy solution and project files for restore
-COPY Directory.Build.props .
 COPY GmrProcessor.slnx .
 COPY src/GmrProcessor/*.csproj src/GmrProcessor/
 COPY tests/GmrProcessor.Tests/*.csproj tests/GmrProcessor.Tests/
+COPY tests/GmrProcessor.IntegrationTests/*.csproj tests/GmrProcessor.IntegrationTests/
+COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
+
+COPY Directory.Build.props Directory.Build.props
+COPY NuGet.config NuGet.config
+
+
 RUN dotnet restore
 
 # Copy source code
