@@ -10,7 +10,9 @@ QUEUE_NAMES=(
 SQS_ENDPOINT_URL="http://localhost:4566"
 
 is_queue_ready() {
-    [ "$(aws --endpoint-url="$SQS_ENDPOINT_URL" sqs list-queues --region "$AWS_REGION" --query "QueueUrls[?contains(@, '$1')] | [0] != null")" = "true" ]
+    local queue_name="$1"
+    [[ "$(aws --endpoint-url="$SQS_ENDPOINT_URL" sqs list-queues --region "$AWS_REGION" --query "QueueUrls[?contains(@, '$queue_name')] | [0] != null")" == "true" ]]
+    return $?
 }
 
 for queue in "${QUEUE_NAMES[@]}"; do
