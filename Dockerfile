@@ -27,15 +27,21 @@ RUN dotnet tool restore
 
 COPY src/GmrProcessor/GmrProcessor.csproj src/GmrProcessor/GmrProcessor.csproj
 COPY tests/GmrProcessor.Tests/GmrProcessor.Tests.csproj tests/GmrProcessor.Tests/GmrProcessor.Tests.csproj
+COPY tests/GmrProcessor.IntegrationTests/*.csproj tests/GmrProcessor.IntegrationTests/
+COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
+
 COPY GmrProcessor.slnx GmrProcessor.slnx
 COPY Directory.Build.props Directory.Build.props
 COPY NuGet.config NuGet.config
+
 
 RUN dotnet restore
 
 # Copy source code
 COPY src/GmrProcessor src/GmrProcessor
 COPY tests/GmrProcessor.Tests tests/GmrProcessor.Tests
+COPY tests/GmrProcessor.IntegrationTests tests/GmrProcessor.IntegrationTests
+COPY tests/TestFixtures tests/TestFixtures
 
 # Check code formatting
 RUN dotnet csharpier check .

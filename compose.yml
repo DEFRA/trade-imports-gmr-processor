@@ -51,8 +51,15 @@ services:
       - "compose/aws.env"
     environment:
       PORT: 8080
+      ASPNETCORE_ENVIRONMENT: Development
       LOCALSTACK_ENDPOINT: http://localstack:4566
-      MONGO_URI: mongodb://mongodb:27017/
+      Mongo__DatabaseUri: mongodb://mongodb:27017/
+      AWS_REGION: eu-west-2
+      AWS_DEFAULT_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_ENDPOINT: http://localstack:4566
+      USE_LOCALSTACK: true
     networks:
       - cdp-tenant
 

@@ -1,6 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using FluentValidation;
 using GmrProcessor.Config;
+using GmrProcessor.Consumers;
+using GmrProcessor.Data;
+using GmrProcessor.Extensions;
+using GmrProcessor.Processors;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
@@ -36,6 +40,9 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddTransient<ProxyHttpMessageHandler>();
     builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
 
+    builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
+    builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
+
     builder.Services.AddHeaderPropagation(options =>
     {
         var traceHeader = builder.Configuration.GetValue<string>("TraceHeader");
@@ -47,6 +54,11 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
     builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+    builder.Services.AddSingleton<IMongoContext, MongoContext>();
+    builder.Services.AddSqsClient();
+    builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
+
+    builder.Services.AddHostedService<DataEventsQueueConsumer>();
 
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();

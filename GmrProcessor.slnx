@@ -1,4 +1,10 @@
 <Solution>
-  <Project Path="src\GmrProcessor\GmrProcessor.csproj" />
-  <Project Path="tests\GmrProcessor.Tests\GmrProcessor.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src\GmrProcessor\GmrProcessor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\GmrProcessor.IntegrationTests\GmrProcessor.IntegrationTests.csproj" />
+    <Project Path="tests\GmrProcessor.Tests\GmrProcessor.Tests.csproj" />
+    <Project Path="tests\TestFixtures\TestFixtures.csproj" Type="Classic C#" />
+  </Folder>
 </Solution>
