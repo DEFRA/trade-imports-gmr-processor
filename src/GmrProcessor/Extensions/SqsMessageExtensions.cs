@@ -12,6 +12,7 @@ public static class SqsMessageHeaders
     public const string ResourceId = nameof(ResourceId);
 }
 
+[ExcludeFromCodeCoverage]
 public static class SqsMessageExtensions
 {
     public static string? GetResourceType(this Message message) =>
