@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using AutoFixture;
 using AutoFixture.Dsl;
 using Defra.TradeImportsDataApi.Domain.Events;
@@ -40,10 +41,9 @@ public static class ImportPreNotificationFixtures
     public static string GenerateRandomReference()
     {
         var chedTypes = new[] { "CHEDP", "CHEDPP", "CHEDA", "CHEDD" };
-        var random = new Random();
-        var chedType = chedTypes[random.Next(chedTypes.Length)];
+        var chedType = chedTypes[RandomNumberGenerator.GetInt32(chedTypes.Length)];
         var year = DateTime.UtcNow.Year;
-        var number = random.Next(0, 10000000).ToString("D7");
+        var number = RandomNumberGenerator.GetInt32(0, 10000000).ToString("D7");
         return $"{chedType}.GB.{year}.{number}";
     }
 }
