@@ -13,21 +13,24 @@ RUN apt update && \
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restore tools
 ARG DEFRA_NUGET_PAT
 ENV DEFRA_NUGET_PAT=${DEFRA_NUGET_PAT}
 
-COPY .config/dotnet-tools.json .config/
+# Restore tools
+COPY .config/dotnet-tools.json .config/dotnet-tools.json
 COPY .csharpierrc .csharpierrc
+COPY .csharpierignore .csharpierignore
+
 RUN dotnet tool restore
 
 # Copy solution and project files for restore
-COPY GmrProcessor.slnx .
-COPY src/GmrProcessor/*.csproj src/GmrProcessor/
-COPY tests/GmrProcessor.Tests/*.csproj tests/GmrProcessor.Tests/
+
+COPY src/GmrProcessor/GmrProcessor.csproj src/GmrProcessor/GmrProcessor.csproj
+COPY tests/GmrProcessor.Tests/GmrProcessor.Tests.csproj tests/GmrProcessor.Tests/GmrProcessor.Tests.csproj
 COPY tests/GmrProcessor.IntegrationTests/*.csproj tests/GmrProcessor.IntegrationTests/
 COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
 
+COPY GmrProcessor.slnx GmrProcessor.slnx
 COPY Directory.Build.props Directory.Build.props
 COPY NuGet.config NuGet.config
 
@@ -35,14 +38,16 @@ COPY NuGet.config NuGet.config
 RUN dotnet restore
 
 # Copy source code
-COPY src/ src/
-COPY tests/ tests/
+COPY src/GmrProcessor src/GmrProcessor
+COPY tests/GmrProcessor.Tests tests/GmrProcessor.Tests
+COPY tests/GmrProcessor.IntegrationTests tests/GmrProcessor.IntegrationTests
+COPY tests/TestFixtures tests/TestFixtures
 
 # Check code formatting
 RUN dotnet csharpier check .
 
 # unit test and code coverage (exclude integration tests)
-RUN dotnet test --filter "Category!=IntegrationTests"
+RUN dotnet test --no-restore --filter "Category!=IntegrationTests"
 
 FROM build AS publish
 RUN dotnet publish src/GmrProcessor -c Release -o /app/publish /p:UseAppHost=false
@@ -53,6 +58,8 @@ ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 # Final production image
 FROM base AS final
 WORKDIR /app
+
 COPY --from=publish /app/publish .
+
 EXPOSE 8085
 ENTRYPOINT ["dotnet", "GmrProcessor.dll"]
