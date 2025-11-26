@@ -4,7 +4,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
-using GmrProcessor.Processors;
+using GmrProcessor.Processors.Gto;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;

@@ -8,7 +8,7 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Extensions;
-using GmrProcessor.Processors;
+using GmrProcessor.Processors.Gto;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
