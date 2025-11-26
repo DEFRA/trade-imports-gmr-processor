@@ -1,7 +1,6 @@
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
-using FluentAssertions;
 using GmrProcessor.Utils;
 
 namespace GmrProcessor.Tests.Utils;
