@@ -3,7 +3,7 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using MongoDB.Driver;
 
-namespace GmrProcessor.Processors.GTO;
+namespace GmrProcessor.Processors.Gto;
 
 public class GtoImportPreNotificationProcessor(IMongoContext mongoContext) : IGtoImportPreNotificationProcessor
 {
@@ -25,7 +25,7 @@ public class GtoImportPreNotificationProcessor(IMongoContext mongoContext) : IGt
             var update = Builders<ImportTransit>
                 .Update.SetOnInsert(x => x.Id, reference)
                 .Set(x => x.TransitOverrideRequired, transitOverride.IsOverrideRequired)
-                .Set(x => x.DeclarationId, importTransitResult.Mrn);
+                .Set(x => x.Mrn, importTransitResult.Mrn);
             var options = new FindOneAndUpdateOptions<ImportTransit> { IsUpsert = true };
 
             await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);

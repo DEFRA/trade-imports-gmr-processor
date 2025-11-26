@@ -1,7 +1,7 @@
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
-namespace GmrProcessor.Processors.GTO;
+namespace GmrProcessor.Processors.Gto;
 
 public interface IGtoImportPreNotificationProcessor
 {

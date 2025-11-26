@@ -1,12 +1,12 @@
 using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
-using GmrProcessor.Processors.GTO;
+using GmrProcessor.Processors.Gto;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
 
-namespace GmrProcessor.Tests.Processors.GTO;
+namespace GmrProcessor.Tests.Processors.Gto;
 
 public class GtoImportPreNotificationProcessorTests
 {

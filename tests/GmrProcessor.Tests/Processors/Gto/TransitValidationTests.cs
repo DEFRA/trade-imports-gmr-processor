@@ -1,11 +1,21 @@
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using FluentAssertions;
-using GmrProcessor.Processors.GTO;
+using GmrProcessor.Processors.Gto;
 
-namespace GmrProcessor.Tests.Processors.GTO;
+namespace GmrProcessor.Tests.Processors.Gto;
 
 public class TransitValidationTests
 {
+    private static readonly string[] s_completeStatusValues = ["rejected", "valid", "validated"];
+
+    [Fact]
+    public void sdfsdfsdf()
+    {
+        var x = s_completeStatusValues.Contains("valid");
+
+        Assert.True(x);
+    }
+
     [Theory]
     [InlineData("NO")]
     public void IsTransit_WhenProvideCtcMrnIsNo_ReturnsNotTransit(string provideCtcMrn)

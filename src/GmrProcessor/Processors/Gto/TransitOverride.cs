@@ -1,6 +1,6 @@
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
-namespace GmrProcessor.Processors.GTO;
+namespace GmrProcessor.Processors.Gto;
 
 public class TransitOverride
 {
@@ -17,7 +17,7 @@ public class TransitOverride
 
     private static TransitOverride NotRequired(string reason) => new(false, reason);
 
-    private static readonly string[] s_completeStatusValues = ["rejected", "valid", "validated"];
+    private static readonly string[] s_completeStatusValues = ["rejected", "partially_rejected", "validated"];
     private static readonly string[] s_inspectionRequiredValues = ["required", "inconclusive"];
 
     public static TransitOverride IsTransitOverrideRequired(ImportPreNotification importPreNotification)
@@ -25,8 +25,11 @@ public class TransitOverride
         var inspectionRequired = importPreNotification.PartTwo?.InspectionRequired?.Trim() ?? string.Empty;
         var importStatus = importPreNotification.Status?.Trim() ?? string.Empty;
 
-        var isImportComplete = s_completeStatusValues.Contains(importStatus);
-        var isInspectionRequired = s_inspectionRequiredValues.Contains(inspectionRequired);
+        var isImportComplete = s_completeStatusValues.Contains(importStatus, StringComparer.OrdinalIgnoreCase);
+        var isInspectionRequired = s_inspectionRequiredValues.Contains(
+            inspectionRequired,
+            StringComparer.OrdinalIgnoreCase
+        );
 
         if (isImportComplete)
         {

@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
-namespace GmrProcessor.Processors.GTO;
+namespace GmrProcessor.Processors.Gto;
 
 public class TransitResult
 {

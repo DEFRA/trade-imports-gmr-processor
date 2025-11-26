@@ -22,13 +22,13 @@ public class TransitImportsTests : IntegrationTestBase
         var expectedChed = ImportPreNotificationFixtures.GenerateRandomReference();
         var expectedStatus = "SUBMITTED";
         var expectedTransitOverrideRequired = false;
-        var expectedDeclarationId = "24GB12345678901234";
+        var expectedMrn = "24GB12345678901234";
 
         var importPreNotification = new ImportPreNotification
         {
             Status = expectedStatus,
             PartOne = new PartOne { ProvideCtcMrn = "YES" },
-            ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedDeclarationId }],
+            ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedMrn }],
         };
 
         var resourceEvent = ImportPreNotificationFixtures
@@ -52,7 +52,7 @@ public class TransitImportsTests : IntegrationTestBase
 
         importTransitCreated.Should().NotBeNull("Import Transit was not created");
         importTransitCreated.TransitOverrideRequired.Should().Be(expectedTransitOverrideRequired);
-        importTransitCreated.DeclarationId.Should().Be(expectedDeclarationId);
+        importTransitCreated.Mrn.Should().Be(expectedMrn);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class TransitImportsTests : IntegrationTestBase
 
         // Second message - update with new values
         var updatedStatus = "VALIDATED";
-        var updatedDeclarationId = "24GB11111111111111";
+        var updatedMrn = "24GB11111111111111";
 
         var expectedTransitOverrideRequired = false;
 
@@ -125,7 +125,7 @@ public class TransitImportsTests : IntegrationTestBase
 
         importTransitUpdated.Should().NotBeNull("Import Transit was not found");
         importTransitUpdated.TransitOverrideRequired.Should().Be(expectedTransitOverrideRequired);
-        importTransitUpdated.DeclarationId.Should().Be(updatedDeclarationId);
+        importTransitUpdated.Mrn.Should().Be(updatedMrn);
     }
 
     private static async Task SendMessageAsync<T>(Amazon.SQS.IAmazonSQS sqsClient, string queueUrl, T resourceEvent)

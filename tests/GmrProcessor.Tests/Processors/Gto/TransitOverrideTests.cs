@@ -1,21 +1,21 @@
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using FluentAssertions;
-using GmrProcessor.Processors.GTO;
+using GmrProcessor.Processors.Gto;
 
-namespace GmrProcessor.Tests.Processors.GTO;
+namespace GmrProcessor.Tests.Processors.Gto;
 
 public class TransitOverrideTests
 {
     [Theory]
     [InlineData("REJECTED")]
-    [InlineData("Valid")]
+    [InlineData("PARTIALLY_REJECTED")]
     [InlineData("VALIDATED")]
     public void IsTransitOverrideRequired_WhenImportStatusIsComplete_ReturnsNotRequired(string status)
     {
         var importPreNotification = new ImportPreNotification
         {
             Status = status,
-            PartTwo = new PartTwo { InspectionRequired = "required" },
+            PartTwo = new PartTwo { InspectionRequired = "Required" },
         };
 
         var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
@@ -76,7 +76,7 @@ public class TransitOverrideTests
     [Fact]
     public void IsTransitOverrideRequired_WhenPartTwoIsNull_ReturnsNotRequired()
     {
-        var importPreNotification = new ImportPreNotification { Status = "submitted", PartTwo = null };
+        var importPreNotification = new ImportPreNotification { Status = "SUBMITTED", PartTwo = null };
 
         var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
 
