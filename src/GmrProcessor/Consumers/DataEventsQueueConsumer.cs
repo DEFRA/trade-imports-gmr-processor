@@ -6,6 +6,7 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors;
+using GmrProcessor.Processors.GTO;
 using GmrProcessor.Utils;
 using Microsoft.Extensions.Options;
 

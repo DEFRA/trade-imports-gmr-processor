@@ -17,19 +17,8 @@ public static class ImportPreNotificationFixtures
             .With(x => x.ResourceId, "CHEDPP.GB.2025.1053368")
             .With(x => x.ResourceType, ResourceEventResourceTypes.ImportPreNotification);
 
-    public static IPostprocessComposer<ImportPreNotification> ImportPreNotificationFixture(string? transitMrn = null)
-    {
-        var importPreNotification = GetFixture().Build<ImportPreNotification>();
-        if (transitMrn == null)
-        {
-            return importPreNotification;
-        }
-
-        return importPreNotification.With(
-            x => x.ExternalReferences,
-            [new ExternalReference { Reference = transitMrn, System = "NCTS" }]
-        );
-    }
+    public static IPostprocessComposer<ImportPreNotification> ImportPreNotificationFixture() =>
+        GetFixture().Build<ImportPreNotification>();
 
     private static Fixture GetFixture()
     {

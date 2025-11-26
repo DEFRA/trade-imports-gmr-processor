@@ -9,6 +9,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors;
+using GmrProcessor.Processors.GTO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
