@@ -1,0 +1,16 @@
+using MongoDB.Driver;
+
+namespace GmrProcessor.Data;
+
+<<<<<<< HEAD
+=======
+public class ImportTransit : IDataEntity
+{
+    public required string Id { get; set; }
+}
+
+>>>>>>> d3d772c8b502db9a35a81d632a62c19d9342a366
+public interface IMongoContext
+{
+    IMongoCollectionSet<ImportTransit> ImportTransits { get; }
+}
