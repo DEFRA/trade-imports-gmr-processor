@@ -36,7 +36,7 @@ public class TransitImportsTests : IntegrationTestBase
             .With(r => r.ResourceId, expectedChed)
             .Create();
 
-        await SendMessageAsync(sqsClient, queueUrl, resourceEvent);
+        await SendResourceEventMessageAsync(sqsClient, queueUrl, resourceEvent);
         await WaitForMessageConsumed(sqsClient, queueUrl);
 
         var importTransitCreated = await AsyncWaiter.WaitForAsync(
@@ -79,7 +79,7 @@ public class TransitImportsTests : IntegrationTestBase
             .With(r => r.ResourceId, expectedChed)
             .Create();
 
-        await SendMessageAsync(sqsClient, queueUrl, initialResourceEvent);
+        await SendResourceEventMessageAsync(sqsClient, queueUrl, initialResourceEvent);
         await WaitForMessageConsumed(sqsClient, queueUrl);
 
         // Wait for initial insert
@@ -113,7 +113,7 @@ public class TransitImportsTests : IntegrationTestBase
             .With(r => r.ResourceId, expectedChed)
             .Create();
 
-        await SendMessageAsync(sqsClient, queueUrl, updatedResourceEvent);
+        await SendResourceEventMessageAsync(sqsClient, queueUrl, updatedResourceEvent);
         await WaitForMessageConsumed(sqsClient, queueUrl);
 
         await Task.Delay(500, TestContext.Current.CancellationToken);
@@ -126,49 +126,5 @@ public class TransitImportsTests : IntegrationTestBase
         importTransitUpdated.Should().NotBeNull("Import Transit was not found");
         importTransitUpdated.TransitOverrideRequired.Should().Be(expectedTransitOverrideRequired);
         importTransitUpdated.Mrn.Should().Be(updatedMrn);
-    }
-
-    private static async Task SendMessageAsync<T>(Amazon.SQS.IAmazonSQS sqsClient, string queueUrl, T resourceEvent)
-        where T : class
-    {
-        var message = new SendMessageRequest
-        {
-            MessageBody = JsonSerializer.Serialize(resourceEvent),
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>
-            {
-                {
-                    "ResourceType",
-                    new MessageAttributeValue
-                    {
-                        DataType = "String",
-                        StringValue = (resourceEvent as dynamic).ResourceType,
-                    }
-                },
-            },
-            QueueUrl = queueUrl,
-        };
-
-        await sqsClient.SendMessageAsync(message, TestContext.Current.CancellationToken);
-    }
-
-    private static async Task WaitForMessageConsumed(Amazon.SQS.IAmazonSQS sqsClient, string queueUrl)
-    {
-        var messageConsumed = await AsyncWaiter.WaitForAsync(
-            async () =>
-            {
-                var result = await sqsClient.GetQueueAttributesAsync(
-                    queueUrl,
-                    ["ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible"]
-                );
-
-                var numberMessagesOnQueue =
-                    result.ApproximateNumberOfMessages + result.ApproximateNumberOfMessagesNotVisible;
-
-                return numberMessagesOnQueue == 0 ? (int?)numberMessagesOnQueue : null;
-            },
-            TestContext.Current.CancellationToken
-        );
-
-        messageConsumed.Should().NotBeNull("Message was not consumed");
     }
 }

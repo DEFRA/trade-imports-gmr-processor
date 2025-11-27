@@ -1,4 +1,7 @@
+using System.Text.Json;
 using Amazon.SQS;
+using Amazon.SQS.Model;
+using FluentAssertions;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
@@ -29,8 +32,6 @@ public abstract class IntegrationTestBase
         { "USE_LOCALSTACK", "true" },
     };
 
-    public const string PublishMessageQueueName = "trade_imports_matched_gmrs_processor";
-
     protected IntegrationTestBase()
     {
         SetEnvironmentVariables();
@@ -47,6 +48,7 @@ public abstract class IntegrationTestBase
         sc.AddSingleton(Configuration);
         sc.AddOptions<LocalStackOptions>().Bind(Configuration);
         sc.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
+        sc.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
         sc.AddValidateOptions<MongoConfig>(MongoConfig.SectionName);
         sc.AddSqsClient();
 
@@ -77,5 +79,49 @@ public abstract class IntegrationTestBase
     {
         var sqsClient = ServiceProvider.GetRequiredService<IAmazonSQS>();
         return (sqsClient, (await sqsClient.GetQueueUrlAsync(queueName)).QueueUrl);
+    }
+
+    protected static async Task WaitForMessageConsumed(IAmazonSQS sqsClient, string queueUrl)
+    {
+        var messageConsumed = await AsyncWaiter.WaitForAsync(
+            async () =>
+            {
+                var result = await sqsClient.GetQueueAttributesAsync(
+                    queueUrl,
+                    ["ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible"]
+                );
+
+                var numberMessagesOnQueue =
+                    result.ApproximateNumberOfMessages + result.ApproximateNumberOfMessagesNotVisible;
+
+                return numberMessagesOnQueue == 0 ? (int?)numberMessagesOnQueue : null;
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        messageConsumed.Should().NotBeNull("Message was not consumed");
+    }
+
+    protected static async Task SendResourceEventMessageAsync<T>(IAmazonSQS sqsClient, string queueUrl, T resourceEvent)
+        where T : class
+    {
+        var message = new SendMessageRequest
+        {
+            MessageBody = JsonSerializer.Serialize(resourceEvent),
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                {
+                    "ResourceType",
+                    new MessageAttributeValue
+                    {
+                        DataType = "String",
+                        StringValue = (resourceEvent as dynamic).ResourceType,
+                    }
+                },
+            },
+            QueueUrl = queueUrl,
+        };
+
+        await sqsClient.SendMessageAsync(message, TestContext.Current.CancellationToken);
     }
 }

@@ -4,12 +4,15 @@ using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
+using GmrProcessor.Processors;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
 using Serilog;
+using GtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.GtoImportPreNotificationProcessor;
+using IGtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.IGtoImportPreNotificationProcessor;
 
 var app = CreateWebApplication(args);
 await app.RunAsync();
@@ -42,6 +45,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
     builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
+    builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
 
     builder.Services.AddHeaderPropagation(options =>
     {
@@ -55,10 +59,13 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
     builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
     builder.Services.AddSingleton<IMongoContext, MongoContext>();
+
     builder.Services.AddSqsClient();
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
+    builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
 
     builder.Services.AddHostedService<DataEventsQueueConsumer>();
+    builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
 
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
