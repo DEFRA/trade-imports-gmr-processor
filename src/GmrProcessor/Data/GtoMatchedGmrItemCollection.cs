@@ -5,4 +5,7 @@ namespace GmrProcessor.Data;
 
 [ExcludeFromCodeCoverage]
 public class GtoMatchedGmrItemCollection(IMongoDbClientFactory database)
-    : MatchedGmrItemCollection(database, nameof(GtoMatchedGmrItemCollection));
+    : MatchedGmrItemCollection(database, CollectionName)
+{
+    private const string CollectionName = "GtoMatchedGmrItem";
+}

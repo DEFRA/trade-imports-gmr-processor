@@ -5,7 +5,10 @@ using MongoDB.Driver;
 
 namespace GmrProcessor.Processors.Gto;
 
-public class GtoImportPreNotificationProcessor(IMongoContext mongoContext) : IGtoImportPreNotificationProcessor
+public class GtoImportPreNotificationProcessor(
+    IMongoContext mongoContext,
+    ILogger<GtoImportPreNotificationProcessor> logger
+) : IGtoImportPreNotificationProcessor
 {
     public async Task ProcessAsync(
         ResourceEvent<ImportPreNotification> importPreNotificationEvent,
@@ -17,18 +20,23 @@ public class GtoImportPreNotificationProcessor(IMongoContext mongoContext) : IGt
 
         var importTransitResult = TransitValidation.IsTransit(importPreNotification);
 
-        if (importTransitResult.IsTransit)
+        if (!importTransitResult.IsTransit)
         {
-            var transitOverride = TransitOverride.IsTransitOverrideRequired(importPreNotification);
-
-            var filter = Builders<ImportTransit>.Filter.Eq(x => x.Id, reference);
-            var update = Builders<ImportTransit>
-                .Update.SetOnInsert(x => x.Id, reference)
-                .Set(x => x.TransitOverrideRequired, transitOverride.IsOverrideRequired)
-                .Set(x => x.Mrn, importTransitResult.Mrn);
-            var options = new FindOneAndUpdateOptions<ImportTransit> { IsUpsert = true };
-
-            await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);
+            logger.LogInformation("CHED {ChedId} is not a transit, skipping", reference);
+            return;
         }
+
+        var transitOverride = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+
+        var filter = Builders<ImportTransit>.Filter.Eq(x => x.Id, reference);
+        var update = Builders<ImportTransit>
+            .Update.SetOnInsert(x => x.Id, reference)
+            .Set(x => x.TransitOverrideRequired, transitOverride.IsOverrideRequired)
+            .Set(x => x.Mrn, importTransitResult.Mrn);
+        var options = new FindOneAndUpdateOptions<ImportTransit> { IsUpsert = true };
+
+        await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);
+
+        logger.LogInformation("Inserted or updated ImportTransit {Id}", reference);
     }
 }

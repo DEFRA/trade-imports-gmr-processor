@@ -2,6 +2,8 @@ using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.Gto;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
@@ -17,7 +19,10 @@ public class GtoImportPreNotificationProcessorTests
     public GtoImportPreNotificationProcessorTests()
     {
         _mockMongoContext.Setup(x => x.ImportTransits).Returns(_mockImportTransits.Object);
-        _processor = new GtoImportPreNotificationProcessor(_mockMongoContext.Object);
+        _processor = new GtoImportPreNotificationProcessor(
+            _mockMongoContext.Object,
+            NullLogger<GtoImportPreNotificationProcessor>.Instance
+        );
     }
 
     [Fact]
