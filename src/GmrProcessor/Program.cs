@@ -10,6 +10,8 @@ using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
+using MongoDB.Driver;
+using MongoDB.Driver.Authentication.AWS;
 using Serilog;
 using GtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.GtoImportPreNotificationProcessor;
 using IGtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.IGtoImportPreNotificationProcessor;
@@ -56,6 +58,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         }
     });
 
+    MongoClientSettings.Extensions.AddAWSAuthentication();
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
     builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
     builder.Services.AddSingleton<IMongoContext, MongoContext>();
