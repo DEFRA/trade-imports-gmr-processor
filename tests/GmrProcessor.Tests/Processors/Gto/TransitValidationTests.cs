@@ -1,5 +1,4 @@
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
-using FluentAssertions;
 using GmrProcessor.Processors.Gto;
 
 namespace GmrProcessor.Tests.Processors.Gto;
