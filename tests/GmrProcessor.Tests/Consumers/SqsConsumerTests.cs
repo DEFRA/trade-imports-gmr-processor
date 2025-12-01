@@ -1,6 +1,5 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using FluentAssertions;
 using GmrProcessor.Consumers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
