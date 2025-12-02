@@ -7,10 +7,11 @@ using MongoDB.Driver.Linq;
 namespace GmrProcessor.Data;
 
 [ExcludeFromCodeCoverage]
-public class MongoCollectionSet<T>(IMongoDbClientFactory database) : IMongoCollectionSet<T>
+public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? collectionName = null)
+    : IMongoCollectionSet<T>
     where T : class, IDataEntity
 {
-    public IMongoCollection<T> Collection => database.GetCollection<T>(typeof(T).Name);
+    public IMongoCollection<T> Collection => database.GetCollection<T>(collectionName ?? typeof(T).Name);
     private IQueryable<T> Queryable => Collection.AsQueryable();
 
     public async Task BulkWrite(List<WriteModel<T>> operations, CancellationToken cancellationToken) =>
