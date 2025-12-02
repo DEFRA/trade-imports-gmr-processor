@@ -1,5 +1,4 @@
 using AutoFixture;
-using FluentAssertions;
 using GmrProcessor.Extensions;
 using TestFixtures;
 

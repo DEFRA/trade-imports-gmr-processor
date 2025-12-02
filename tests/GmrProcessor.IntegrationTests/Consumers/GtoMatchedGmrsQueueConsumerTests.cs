@@ -3,7 +3,6 @@ using Amazon.SQS.Model;
 using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using Defra.TradeImportsGmrFinder.Domain.Events;
-using FluentAssertions;
 using GmrProcessor.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
