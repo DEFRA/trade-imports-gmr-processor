@@ -1,5 +1,4 @@
 using AutoFixture;
-using FluentAssertions;
 using GmrProcessor.Data;
 using GmrProcessor.Utils.Mongo;
 using MongoDB.Bson.Serialization;

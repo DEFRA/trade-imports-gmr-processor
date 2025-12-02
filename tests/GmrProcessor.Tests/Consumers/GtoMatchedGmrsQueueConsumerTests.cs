@@ -4,7 +4,6 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using AutoFixture;
 using Defra.TradeImportsGmrFinder.Domain.Events;
-using FluentAssertions;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Processors.Gto;

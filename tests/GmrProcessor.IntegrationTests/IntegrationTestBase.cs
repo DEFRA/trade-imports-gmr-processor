@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using FluentAssertions;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
@@ -9,7 +8,6 @@ using GmrProcessor.Utils.Mongo;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Environment = System.Environment;
 
 namespace GmrProcessor.IntegrationTests;
