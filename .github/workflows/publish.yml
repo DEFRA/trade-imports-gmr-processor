@@ -38,6 +38,9 @@ jobs:
         run: |
           dotnet test --filter "Category!=IntegrationTests"
       - name: Run integration tests
+        env:
+          GVMS_API_CLIENT_ID: ${{ secrets.GVMS_API_CLIENT_ID }}
+          GVMS_API_CLIENT_SECRET: ${{ secrets.GVMS_API_CLIENT_SECRET }}
         run: |
           docker compose up -d --build
           dotnet test --filter "Category=IntegrationTests"

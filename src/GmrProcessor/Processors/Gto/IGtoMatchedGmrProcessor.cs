@@ -4,5 +4,5 @@ namespace GmrProcessor.Processors.Gto;
 
 public interface IGtoMatchedGmrProcessor
 {
-    Task Process(MatchedGmr matchedGmr, CancellationToken cancellationToken);
+    Task<GtoMatchedGmrProcessResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken);
 }
