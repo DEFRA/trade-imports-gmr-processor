@@ -6,5 +6,4 @@ public enum GtoMatchedGmrProcessResult
     SkippedOldGmr,
     NoHoldChange,
     HoldPlaced,
-    HoldReleased,
 }

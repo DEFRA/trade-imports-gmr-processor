@@ -46,18 +46,16 @@ public class GtoMatchedGmrProcessorTests
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Process_WhenTransitOverrideChanges_ChangesHold(bool requiresHold)
+    [Fact]
+    public async Task Process_WhenTransitOverrideChanges_ChangesHold()
     {
         var matched = BuildMatchedGmr();
-        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: !requiresHold);
+        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: false);
         var importTransit = new ImportTransit
         {
             Id = ImportPreNotificationFixtures.GenerateRandomReference(),
             Mrn = matched.Mrn,
-            TransitOverrideRequired = requiresHold,
+            TransitOverrideRequired = true,
         };
 
         _mockImportTransitRepository
@@ -78,17 +76,12 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result
-            .Should()
-            .Be(requiresHold ? GtoMatchedGmrProcessResult.HoldPlaced : GtoMatchedGmrProcessResult.HoldReleased);
-        _gvms.Verify(
-            g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, requiresHold, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        result.Should().Be(GtoMatchedGmrProcessResult.HoldPlaced);
+        _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Process_WhenHoldAlreadyCorrect_ReturnsNoHoldChange()
+    public async Task Process_WhenHoldAlreadyApplied_ReturnsNoHoldChange()
     {
         var matched = BuildMatchedGmr();
         var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: true);
@@ -96,7 +89,7 @@ public class GtoMatchedGmrProcessorTests
         {
             Id = ImportPreNotificationFixtures.GenerateRandomReference(),
             Mrn = matched.Mrn,
-            TransitOverrideRequired = true,
+            TransitOverrideRequired = false,
         };
 
         _mockImportTransitRepository

@@ -48,13 +48,9 @@ public class GtoMatchedGmrProcessor(
         var relatedImportTransits = await importTransitRepository.GetByMrns(relatedMrns, cancellationToken);
         var anyImportTransitsRequireHold = ShouldHold(relatedImportTransits);
 
-        if (gtoGmr.HoldStatus == anyImportTransitsRequireHold)
+        if (gtoGmr.HoldStatus)
         {
-            logger.LogInformation(
-                "GMR {GmrId} is already in the correct hold state {HoldStatus}",
-                matchedGmr.Gmr.GmrId,
-                gtoGmr.HoldStatus
-            );
+            logger.LogInformation("GMR {GmrId} is already on hold", matchedGmr.Gmr.GmrId);
             return GtoMatchedGmrProcessResult.NoHoldChange;
         }
 
@@ -63,10 +59,7 @@ public class GtoMatchedGmrProcessor(
             anyImportTransitsRequireHold,
             cancellationToken
         );
-
-        return anyImportTransitsRequireHold
-            ? GtoMatchedGmrProcessResult.HoldPlaced
-            : GtoMatchedGmrProcessResult.HoldReleased;
+        return GtoMatchedGmrProcessResult.HoldPlaced;
     }
 
     private static bool ShouldHold(IEnumerable<ImportTransit> relatedImportTransits) =>
