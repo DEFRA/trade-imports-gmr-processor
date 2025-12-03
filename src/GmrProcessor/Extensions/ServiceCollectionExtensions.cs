@@ -2,8 +2,11 @@ using System.Diagnostics.CodeAnalysis;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
+using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using GmrProcessor.Config;
+using GmrProcessor.Utils.Http;
 using Microsoft.Extensions.Options;
+using Polly;
 
 namespace GmrProcessor.Extensions;
 
@@ -32,4 +35,46 @@ public static class ServiceCollectionExtensions
                 }
             );
         });
+
+    public static IServiceCollection AddGvmsApiClient(this IServiceCollection services)
+    {
+        services
+            .AddValidateOptions<GmrProcessorGvmsApiOptions>(GmrProcessorGvmsApiOptions.SectionName)
+            .Validate(
+                apiOptions =>
+                {
+                    var baseUri = apiOptions.BaseUri;
+                    return Uri.TryCreate(baseUri, UriKind.Absolute, out _) && baseUri.EndsWith('/');
+                },
+                "BaseUri must be a valid absolute URI with trailing slash"
+            );
+
+        services.AddValidateOptions<GvmsApiOptions>(GmrProcessorGvmsApiOptions.SectionName);
+
+        services
+            .AddMemoryCache()
+            .AddHttpClient<IGvmsApiClient, GvmsApiClient>()
+            .ConfigureHttpClient(
+                (sp, c) =>
+                {
+                    var settings = sp.GetRequiredService<IOptions<GmrProcessorGvmsApiOptions>>().Value;
+                    c.BaseAddress = new Uri(settings.BaseUri);
+                }
+            )
+            .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>()
+            .AddResilienceHandler(
+                "GvmsApi",
+                (pipelineBuilder, context) =>
+                {
+                    var gvmsApiSettings = context.GetOptions<GmrProcessorGvmsApiOptions>();
+
+                    pipelineBuilder
+                        .AddRetry(gvmsApiSettings.Retry)
+                        .AddTimeout(gvmsApiSettings.Timeout)
+                        .AddCircuitBreaker(gvmsApiSettings.CircuitBreaker);
+                }
+            );
+
+        return services;
+    }
 }

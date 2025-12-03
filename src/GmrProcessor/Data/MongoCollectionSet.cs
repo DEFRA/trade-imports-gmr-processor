@@ -17,6 +17,9 @@ public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? colle
     public async Task BulkWrite(List<WriteModel<T>> operations, CancellationToken cancellationToken) =>
         await Collection.BulkWriteAsync(operations, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
 
+    public async Task DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken) =>
+        await Collection.DeleteOneAsync(filter, cancellationToken);
+
     public async Task<T?> FindOne(Expression<Func<T, bool>> expression, CancellationToken cancellationToken) =>
         await Queryable.SingleOrDefaultAsync(expression, cancellationToken);
 
@@ -41,11 +44,6 @@ public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? colle
         return await query.ToListAsync(cancellationToken);
     }
 
-    public async Task Insert(T item, CancellationToken cancellationToken)
-    {
-        await Collection.InsertOneAsync(item, null, cancellationToken);
-    }
-
     public async Task<T?> FindOneAndUpdate(
         FilterDefinition<T> filter,
         UpdateDefinition<T> update,
@@ -55,4 +53,11 @@ public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? colle
     {
         return await Collection.FindOneAndUpdateAsync(filter, update, options, cancellationToken);
     }
+
+    public async Task UpdateOne(
+        FilterDefinition<T> filter,
+        UpdateDefinition<T> update,
+        UpdateOptions options,
+        CancellationToken cancellationToken
+    ) => await Collection.UpdateOneAsync(filter, update, options, cancellationToken);
 }

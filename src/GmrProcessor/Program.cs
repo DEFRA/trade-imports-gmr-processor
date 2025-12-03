@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using FluentValidation;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
-using GmrProcessor.Processors;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Services;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
@@ -17,6 +18,14 @@ using GtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.GtoImportP
 using IGtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.IGtoImportPreNotificationProcessor;
 
 var app = CreateWebApplication(args);
+
+// Ensure the database indices are initialized before starting the application.
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<MongoDbInitializer>();
+    await initializer.Init();
+}
+
 await app.RunAsync();
 return;
 
@@ -44,6 +53,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddTransient<ProxyHttpMessageHandler>();
     builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
+    builder.Services.AddGvmsApiClient();
 
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
     builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
@@ -62,8 +72,12 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
     builder.Services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
     builder.Services.AddSingleton<IMongoContext, MongoContext>();
+    builder.Services.AddSingleton<MongoDbInitializer>();
 
     builder.Services.AddSqsClient();
+    builder.Services.AddSingleton<IImportTransitRepository, ImportTransitRepository>();
+    builder.Services.AddSingleton<IGtoMatchedGmrRepository, GtoMatchedGmrRepository>();
+    builder.Services.AddSingleton<IGvmsApiClientService, GvmsApiClientService>();
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
 

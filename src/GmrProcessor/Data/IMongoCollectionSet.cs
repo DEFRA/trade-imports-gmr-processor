@@ -10,6 +10,8 @@ public interface IMongoCollectionSet<T>
 
     Task BulkWrite(List<WriteModel<T>> operations, CancellationToken cancellationToken);
 
+    Task DeleteOneAsync(FilterDefinition<T> filter, CancellationToken cancellationToken);
+
     Task<T?> FindOneAndUpdate(
         FilterDefinition<T> filter,
         UpdateDefinition<T> update,
@@ -26,5 +28,10 @@ public interface IMongoCollectionSet<T>
         int? limit = null
     );
 
-    Task Insert(T item, CancellationToken cancellationToken);
+    Task UpdateOne(
+        FilterDefinition<T> filter,
+        UpdateDefinition<T> update,
+        UpdateOptions options,
+        CancellationToken cancellationToken
+    );
 }
