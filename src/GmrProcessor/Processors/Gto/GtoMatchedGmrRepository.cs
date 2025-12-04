@@ -39,4 +39,9 @@ public class GtoMatchedGmrRepository(IMongoContext mongo) : IGtoMatchedGmrReposi
 
         return relatedMatchedGmrItems.Where(x => x.Mrn is not null).Select(x => x.Mrn!).ToList();
     }
+
+    public async Task<MatchedGmrItem?> GetByMrn(string mrn, CancellationToken cancellationToken)
+    {
+        return await mongo.GtoMatchedGmrItem.FindOne(g => g.Mrn == mrn, cancellationToken);
+    }
 }
