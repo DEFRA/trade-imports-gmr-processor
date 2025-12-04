@@ -139,4 +139,37 @@ public class GtoMatchedGmrRepositoryTests
         result.Should().BeSameAs(persisted);
         _gtoGmr.Verify(g => g.UpdateOrInsert(gtoGmr, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByMrn_ReturnsMatchedItemByMrn()
+    {
+        var mrn = ImportPreNotificationFixtures.GenerateRandomReference();
+        var matchedItem = new MatchedGmrItem { Mrn = mrn, GmrId = GmrFixtures.GenerateGmrId() };
+
+        _matchedItems
+            .Setup(m =>
+                m.FindOne(
+                    It.Is<Expression<Func<MatchedGmrItem, bool>>>(f =>
+                        f.Compile().Invoke(new MatchedGmrItem { Mrn = mrn, GmrId = matchedItem.GmrId })
+                        && !f.Compile().Invoke(new MatchedGmrItem { Mrn = "different", GmrId = matchedItem.GmrId })
+                    ),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(matchedItem);
+
+        var result = await _repo.GetByMrn(mrn, CancellationToken.None);
+
+        result.Should().BeSameAs(matchedItem);
+        _matchedItems.Verify(
+            m =>
+                m.FindOne(
+                    It.Is<Expression<Func<MatchedGmrItem, bool>>>(f =>
+                        f.Compile().Invoke(new MatchedGmrItem { Mrn = mrn, GmrId = matchedItem.GmrId })
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
 }
