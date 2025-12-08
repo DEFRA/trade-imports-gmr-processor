@@ -2,7 +2,7 @@ using Defra.TradeImportsGmrFinder.Domain.Events;
 
 namespace GmrProcessor.Processors;
 
-public interface IMatchedGmrProcessor
+public interface IMatchedGmrProcessor<TResult>
 {
-    Task Process(MatchedGmr matchedGmr, CancellationToken cancellationToken);
+    Task<TResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken);
 }

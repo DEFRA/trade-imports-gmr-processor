@@ -8,9 +8,9 @@ using GmrProcessor.Utils;
 
 namespace GmrProcessor.Consumers;
 
-public abstract class MatchedGmrsQueueConsumer<TConsumer>(
+public abstract class MatchedGmrsQueueConsumer<TConsumer, T>(
     ILogger<TConsumer> logger,
-    IMatchedGmrProcessor processor,
+    IMatchedGmrProcessor<T> processor,
     IAmazonSQS sqsClient,
     string queueName,
     int waitTimeSeconds = 20

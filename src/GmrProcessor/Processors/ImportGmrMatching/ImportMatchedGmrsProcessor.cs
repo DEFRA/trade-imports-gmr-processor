@@ -9,7 +9,7 @@ namespace GmrProcessor.Processors.ImportGmrMatching;
 public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoContext mongoContext)
     : IImportMatchedGmrsProcessor
 {
-    public async Task Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
+    public async Task<object> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
         var matchMrn = matchedGmr.Mrn!;
 
@@ -45,6 +45,8 @@ public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoCo
         {
             await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
         }
+
+        return new object();
     }
 
     private async Task<string[]> GetTransitByMrn(string mrn, CancellationToken cancellationToken)

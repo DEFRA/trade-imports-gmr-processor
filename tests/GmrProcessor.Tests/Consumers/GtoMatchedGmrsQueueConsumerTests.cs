@@ -21,6 +21,9 @@ public class GtoMatchedGmrsQueueConsumerTests
 
     public GtoMatchedGmrsQueueConsumerTests()
     {
+        _processor
+            .Setup(p => p.Process(It.IsAny<MatchedGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GtoMatchedGmrProcessResult.NoHoldChange);
         _consumer = new GtoMatchedGmrsQueueConsumer(
             NullLogger<GtoMatchedGmrsQueueConsumer>.Instance,
             _processor.Object,
@@ -48,7 +51,7 @@ public class GtoMatchedGmrsQueueConsumerTests
     }
 
     [Fact]
-    public async Task ProcessMessageAsync_WhenReceivingAnValidMessage_ThrowsJsonException()
+    public async Task ProcessMessageAsync_WhenReceivingAnInvalidMessage_ThrowsJsonException()
     {
         var message = new Message { Body = "invalid" };
 

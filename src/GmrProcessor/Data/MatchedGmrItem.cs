@@ -1,17 +1,22 @@
-using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
+using System.Diagnostics.CodeAnalysis;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace GmrProcessor.Data;
 
+[ExcludeFromCodeCoverage]
+[BsonIgnoreExtraElements]
 public class MatchedGmrItem : IDataEntity
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = string.Empty;
 
-    public required string ImportTransitId { get; init; }
+    [BsonElement("mrn")]
     public string? Mrn { get; init; }
+
+    [BsonElement("gmrId")]
     public required string GmrId { get; init; }
-    public required Gmr Gmr { get; init; }
-    public DateTime UpdatedDateTime { get; init; }
+
+    [BsonElement("updatedDateTime")]
+    public DateTime? UpdatedDateTime { get; init; }
 }

@@ -11,7 +11,7 @@ public class GtoMatchedGmrsQueueConsumer(
     IOptions<GtoMatchedGmrsQueueOptions> options,
     IAmazonSQS sqsClient
 )
-    : MatchedGmrsQueueConsumer<GtoMatchedGmrsQueueConsumer>(
+    : MatchedGmrsQueueConsumer<GtoMatchedGmrsQueueConsumer, GtoMatchedGmrProcessResult>(
         logger,
         gtoMatchedGmrProcessor,
         sqsClient,

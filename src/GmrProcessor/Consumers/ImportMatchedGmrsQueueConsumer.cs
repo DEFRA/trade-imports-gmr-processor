@@ -11,7 +11,7 @@ public class ImportMatchedGmrsQueueConsumer(
     IOptions<ImportMatchedGmrsQueueOptions> options,
     IAmazonSQS sqsClient
 )
-    : MatchedGmrsQueueConsumer<ImportMatchedGmrsQueueConsumer>(
+    : MatchedGmrsQueueConsumer<ImportMatchedGmrsQueueConsumer, object>(
         logger,
         importMatchedGmrsProcessor,
         sqsClient,
