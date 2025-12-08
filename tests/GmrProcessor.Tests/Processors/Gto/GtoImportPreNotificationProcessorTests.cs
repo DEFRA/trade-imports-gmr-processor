@@ -86,12 +86,12 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_WhenOverrideChangesToRequired_PlacesHold()
     {
-        const string resourceId = "CHEDD.GB.2024.1234567";
+        const string importReference = "CHEDD.GB.2024.1234567";
         const string mrn = "24GB12345678901234";
         var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(resourceId)
+            .ImportPreNotificationFixture(importReference)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
@@ -113,7 +113,7 @@ public class GtoImportPreNotificationProcessorTests
             .ReturnsAsync(
                 new ImportTransit
                 {
-                    Id = resourceId,
+                    Id = importReference,
                     TransitOverrideRequired = false,
                     Mrn = mrn,
                 }
