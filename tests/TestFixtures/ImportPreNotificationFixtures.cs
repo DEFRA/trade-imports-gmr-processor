@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using AutoFixture;
 using AutoFixture.Dsl;
+using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
@@ -8,17 +9,21 @@ namespace TestFixtures;
 
 public static class ImportPreNotificationFixtures
 {
+    public static IPostprocessComposer<ImportPreNotificationResponse> ImportPreNotificationResponseFixture(
+        ImportPreNotification importPreNotification
+    ) => GetFixture().Build<ImportPreNotificationResponse>().With(x => x.ImportPreNotification, importPreNotification);
+
     public static IPostprocessComposer<ResourceEvent<ImportPreNotification>> ImportPreNotificationResourceEventFixture(
         ImportPreNotification importPreNotification
     ) =>
         GetFixture()
             .Build<ResourceEvent<ImportPreNotification>>()
             .With(x => x.Resource, importPreNotification)
-            .With(x => x.ResourceId, "CHEDPP.GB.2025.1053368")
+            .With(x => x.ResourceId, importPreNotification.ReferenceNumber)
             .With(x => x.ResourceType, ResourceEventResourceTypes.ImportPreNotification);
 
-    public static IPostprocessComposer<ImportPreNotification> ImportPreNotificationFixture() =>
-        GetFixture().Build<ImportPreNotification>();
+    public static IPostprocessComposer<ImportPreNotification> ImportPreNotificationFixture(string reference) =>
+        GetFixture().Build<ImportPreNotification>().With(x => x.ReferenceNumber, reference);
 
     private static Fixture GetFixture()
     {

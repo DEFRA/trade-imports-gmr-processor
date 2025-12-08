@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using Defra.TradeImportsDataApi.Api.Client;
 using FluentValidation;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
-using GmrProcessor.Processors;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.ImportGmrMatching;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
@@ -45,9 +46,17 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddTransient<ProxyHttpMessageHandler>();
     builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
 
+    builder
+        .Services.AddOptions<DataApiOptions>()
+        .BindConfiguration(DataApiOptions.SectionName)
+        .ValidateDataAnnotations();
+    builder.Services.AddTradeImportsDataApiClient();
+    builder.Services.AddDataApiHttpClient();
+
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
     builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
     builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
+    builder.Services.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
 
     builder.Services.AddHeaderPropagation(options =>
     {
@@ -66,9 +75,11 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSqsClient();
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
+    builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
 
     builder.Services.AddHostedService<DataEventsQueueConsumer>();
     builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
+    builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
 
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();

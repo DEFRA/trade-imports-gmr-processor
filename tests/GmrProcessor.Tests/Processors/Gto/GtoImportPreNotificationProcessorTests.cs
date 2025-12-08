@@ -1,8 +1,6 @@
-using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.Gto;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
@@ -28,10 +26,8 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_InsertsImportTransitIfNotExists()
     {
-        var resourceId = "CHEDD.GB.2024.1234567";
-
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture("CHEDD.GB.2024.1234567")
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(
                 x => x.ExternalReferences,
@@ -40,7 +36,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
@@ -60,15 +55,12 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_DoesNotInsertImportTransitWhenItsNotATransit()
     {
-        var resourceId = "CHEDD.GB.2024.1234567";
-
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture("CHEDD.GB.2024.1234567")
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "NO" })
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
