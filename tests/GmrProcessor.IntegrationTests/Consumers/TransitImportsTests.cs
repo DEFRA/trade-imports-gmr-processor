@@ -1,5 +1,3 @@
-using System.Text.Json;
-using Amazon.SQS.Model;
 using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;

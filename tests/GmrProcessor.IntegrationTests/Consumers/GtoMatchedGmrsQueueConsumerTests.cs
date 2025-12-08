@@ -4,7 +4,6 @@ using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
-using GmrProcessor.Data;
 using GmrProcessor.Data.Gto;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
