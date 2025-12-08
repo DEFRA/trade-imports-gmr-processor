@@ -81,6 +81,46 @@ public class GtoMatchedGmrProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenTransitOverrideChanges_AndWhenMultipleTransitOverridesExist_ChangesHold()
+    {
+        var matched = BuildMatchedGmr();
+        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: false);
+        var importTransit = new ImportTransit
+        {
+            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
+            Mrn = matched.Mrn,
+            TransitOverrideRequired = true,
+        };
+        var importTransitTwo = new ImportTransit
+        {
+            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
+            Mrn = matched.Mrn,
+            TransitOverrideRequired = false,
+        };
+
+        _mockImportTransitRepository
+            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(importTransit);
+        _mockMatchedGmrRepository
+            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(gtoGmr);
+        _mockMatchedGmrRepository
+            .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _mockMatchedGmrRepository
+            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([matched.Mrn!]);
+        _mockImportTransitRepository
+            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit, importTransitTwo]);
+
+        var result = await _processor.Process(matched, CancellationToken.None);
+
+        result.Should().Be(GtoMatchedGmrProcessResult.HoldPlaced);
+        _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Process_WhenHoldAlreadyApplied_ReturnsNoHoldChange()
     {
         var matched = BuildMatchedGmr();
