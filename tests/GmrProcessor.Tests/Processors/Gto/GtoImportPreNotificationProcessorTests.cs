@@ -337,7 +337,7 @@ public class GtoImportPreNotificationProcessorTests
         var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(resourceId)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Not Required" })
