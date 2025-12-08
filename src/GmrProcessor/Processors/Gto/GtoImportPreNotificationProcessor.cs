@@ -10,7 +10,8 @@ public class GtoImportPreNotificationProcessor(
     IMongoContext mongoContext,
     ILogger<GtoImportPreNotificationProcessor> logger,
     IGvmsApiClientService gvmsApiClientService,
-    IGtoMatchedGmrRepository matchedGmrRepository
+    IGtoMatchedGmrRepository matchedGmrRepository,
+    IImportTransitRepository importTransitRepository
 ) : IGtoImportPreNotificationProcessor
 {
     public async Task ProcessAsync(
@@ -56,22 +57,25 @@ public class GtoImportPreNotificationProcessor(
             && transitOverride.IsOverrideRequired != originalTransitOverrideRecord.TransitOverrideRequired
         )
         {
-            await PlaceOrReleaseHold(importTransitResult.Mrn!, transitOverride.IsOverrideRequired, cancellationToken);
+            await PlaceOrReleaseHold(importTransitResult.Mrn!, cancellationToken);
+            return;
         }
+
+        logger.LogInformation("No change in transit override status for {Id}", reference);
     }
 
-    private async Task PlaceOrReleaseHold(string mrn, bool holdStatus, CancellationToken cancellationToken)
+    private async Task PlaceOrReleaseHold(string mrn, CancellationToken cancellationToken)
     {
         var matchedGmr = await matchedGmrRepository.GetByMrn(mrn, cancellationToken);
         if (matchedGmr is null)
         {
-            logger.LogInformation(
-                "Tried to {HoldStatus} on MRN {Mrn} but no MatchedGmr exists",
-                holdStatus ? "place hold" : "release",
-                mrn
-            );
+            logger.LogInformation("Tried to place or release hold on MRN {Mrn} but no MatchedGmr exists", mrn);
             return;
         }
+
+        var relatedMrns = await matchedGmrRepository.GetRelatedMrns(matchedGmr.GmrId, cancellationToken);
+        var relatedImportTransits = await importTransitRepository.GetByMrns(relatedMrns, cancellationToken);
+        var holdStatus = relatedImportTransits.Any(x => x.TransitOverrideRequired);
 
         await gvmsApiClientService.PlaceOrReleaseHold(matchedGmr.GmrId, holdStatus, cancellationToken);
     }
