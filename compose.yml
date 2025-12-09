@@ -19,13 +19,9 @@ services:
       interval: 5s
       start_period: 5s
       retries: 3
-    networks:
-      - cdp-tenant
 
   mongodb:
     image: mongo:6.0.13
-    networks:
-      - cdp-tenant
     ports:
       - "27017:27017"
     volumes:
@@ -39,9 +35,6 @@ services:
       context: ./
     ports:
       - "8080:8080"
-    links:
-      - "localstack:localstack"
-      - "mongodb:mongodb"
     depends_on:
       localstack:
         condition: service_healthy
@@ -63,8 +56,6 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       SQS_ENDPOINT: http://localstack:4566
       USE_LOCALSTACK: true
-    networks:
-      - cdp-tenant
 
   wiremock:
     environment:
