@@ -105,6 +105,7 @@ public class ImportMatchedGmrsProcessorTests
             // Access the replacement document
             var notification = replaceOp.Replacement;
             Assert.Equal(mrn, notification.Mrn);
+            Assert.NotNull(notification.CreatedDateTime);
             Assert.Contains(notification.Id, new[] { importRef1, importRef2, transitId });
         }
     }

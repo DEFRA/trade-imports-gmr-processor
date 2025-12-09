@@ -30,7 +30,12 @@ public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoCo
         var bulkOperations = unmatched
             .Select(um =>
             {
-                var notification = new MatchedImportNotification { Id = um, Mrn = matchMrn };
+                var notification = new MatchedImportNotification
+                {
+                    Id = um,
+                    Mrn = matchMrn,
+                    CreatedDateTime = DateTime.UtcNow,
+                };
                 return new ReplaceOneModel<MatchedImportNotification>(
                     Builders<MatchedImportNotification>.Filter.Eq(n => n.Id, um),
                     notification
