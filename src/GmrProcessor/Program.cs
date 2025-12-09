@@ -60,7 +60,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         .Services.AddOptions<DataApiOptions>()
         .BindConfiguration(DataApiOptions.SectionName)
         .ValidateDataAnnotations();
-    builder.Services.AddTradeImportsDataApiClient();
+
     builder.Services.AddDataApiHttpClient();
 
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
