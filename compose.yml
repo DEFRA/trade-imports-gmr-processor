@@ -53,7 +53,7 @@ services:
       PORT: 8080
       ASPNETCORE_ENVIRONMENT: Development
       LOCALSTACK_ENDPOINT: http://localstack:4566
-      DataApi__BaseAddress: "http://wiremock"
+      DataApi__BaseAddress: "http://wiremock:9090"
       GvmsApi__ClientId: ${GVMS_API_CLIENT_ID}
       GvmsApi__ClientSecret: ${GVMS_API_CLIENT_SECRET}
       Mongo__DatabaseUri: mongodb://mongodb:27017/
