@@ -75,7 +75,3 @@ services:
 
 volumes:
   mongodb-data:
-
-networks:
-  cdp-tenant:
-    driver: bridge
