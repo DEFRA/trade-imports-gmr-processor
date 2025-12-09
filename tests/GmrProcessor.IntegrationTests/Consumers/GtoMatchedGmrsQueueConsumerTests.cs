@@ -12,7 +12,8 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
+[Collection("UsesWireMockClient")]
+public class GtoMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) : IntegrationTestBase
 {
     [Fact]
     public async Task WhenMatchedGmrReceived_AndIsNewMatch_IsStored()

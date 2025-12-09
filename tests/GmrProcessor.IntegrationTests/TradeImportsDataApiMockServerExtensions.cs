@@ -1,27 +1,28 @@
+using System.Net;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
-using Microsoft.AspNetCore.Http;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
+using WireMock.Client.Extensions;
 
 namespace GmrProcessor.IntegrationTests;
 
 public static class TradeImportsDataApiMockServerExtensions
 {
-    public static void MockImportPreNotificationsByMrn(
-        this WireMockServer server,
+    public static async Task MockImportPreNotificationsByMrn(
+        this WireMockClient client,
         string mrn,
         params ImportPreNotificationResponse[] imports
     )
     {
-        server
-            .Given(Request.Create().WithPath($"/customs-declarations/{mrn}/import-pre-notifications").UsingGet())
-            .RespondWith(
-                Response
-                    .Create()
-                    .WithBody(new ImportPreNotificationsResponse(imports).AsJsonString())
-                    .WithStatusCode(StatusCodes.Status200OK)
-            );
+        var mappingBuilder = client.WireMockAdminApi.GetMappingBuilder();
+        mappingBuilder.Given(m =>
+            m.WithRequest(req => req.WithPath($"/customs-declarations/{mrn}/import-pre-notifications").UsingGet())
+                .WithResponse(rsp =>
+                    rsp.WithBody(new ImportPreNotificationsResponse(imports).AsJsonString())
+                        .WithStatusCode(HttpStatusCode.Created)
+                )
+        );
+
+        var status = await mappingBuilder.BuildAndPostAsync();
+        Assert.NotNull(status.Guid);
     }
 }

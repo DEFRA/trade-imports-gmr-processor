@@ -7,20 +7,12 @@ using GmrProcessor.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using TestFixtures;
-using WireMock.Server;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-public class ImportMatchedGmrsQueueConsumerTests : IntegrationTestBase, IClassFixture<WireMockContext>
+[Collection("UsesWireMockClient")]
+public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) : IntegrationTestBase
 {
-    public ImportMatchedGmrsQueueConsumerTests(WireMockContext context)
-    {
-        WireMock = context.TradeImportsDataApiMockServer;
-        WireMock.Reset();
-    }
-
-    private WireMockServer WireMock { get; }
-
     [Fact]
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromImports()
     {
@@ -29,7 +21,7 @@ public class ImportMatchedGmrsQueueConsumerTests : IntegrationTestBase, IClassFi
             .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
             .Create();
 
-        WireMock.MockImportPreNotificationsByMrn(
+        await wireMockClient.MockImportPreNotificationsByMrn(
             expectedMrn,
             ImportPreNotificationFixtures.ImportPreNotificationResponseFixture(expectedImport).Create()
         );
@@ -69,7 +61,7 @@ public class ImportMatchedGmrsQueueConsumerTests : IntegrationTestBase, IClassFi
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
         var expectedTransit = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        WireMock.MockImportPreNotificationsByMrn(expectedMrn);
+        await wireMockClient.MockImportPreNotificationsByMrn(expectedMrn);
 
         var dataEventsQueueConfig = GetConfig<DataEventsQueueConsumerOptions>();
         var (sqsClient, queueUrl) = await GetSqsClient(dataEventsQueueConfig.QueueName);
