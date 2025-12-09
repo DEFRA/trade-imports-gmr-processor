@@ -11,6 +11,8 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.7.502.6" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="WireMock.Net" Version="1.16.0" />
+    <PackageReference Include="WireMock.Net.RestClient" Version="1.17.0" />
     <PackageReference Include="xunit.v3" Version="3.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>

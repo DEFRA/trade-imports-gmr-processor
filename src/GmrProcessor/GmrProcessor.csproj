@@ -8,7 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.SQS" Version="3.7.502.6" />
-    <PackageReference Include="Defra.TradeImportsDataApi.Domain" Version="0.31.0" />
+    <PackageReference Include="Defra.TradeImportsDataApi.Api.Client" Version="0.37.0" />
+    <PackageReference Include="Defra.TradeImportsDataApi.Domain" Version="0.32.0" />
     <PackageReference Include="Defra.TradeImportsGmrFinder.Domain" Version="1.0.1" />
     <PackageReference Include="Elastic.Serilog.Enrichers.Web" Version="9.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />

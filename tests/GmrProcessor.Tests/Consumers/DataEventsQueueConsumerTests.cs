@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -43,7 +42,9 @@ public class DataEventsQueueConsumerTests
         var body = JsonSerializer.Serialize(
             ImportPreNotificationFixtures
                 .ImportPreNotificationResourceEventFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture().Create()
+                    ImportPreNotificationFixtures
+                        .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
+                        .Create()
                 )
                 .Create()
         );

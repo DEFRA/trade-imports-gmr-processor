@@ -1,4 +1,3 @@
-using AutoFixture;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.Gto;
@@ -34,10 +33,8 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_InsertsImportTransitIfNotExists()
     {
-        var resourceId = "CHEDD.GB.2024.1234567";
-
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture("CHEDD.GB.2024.1234567")
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(
                 x => x.ExternalReferences,
@@ -46,7 +43,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
@@ -66,15 +62,12 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_DoesNotInsertImportTransitWhenItsNotATransit()
     {
-        var resourceId = "CHEDD.GB.2024.1234567";
-
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture("CHEDD.GB.2024.1234567")
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "NO" })
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
@@ -94,12 +87,12 @@ public class GtoImportPreNotificationProcessorTests
     [Fact]
     public async Task ProcessAsync_WhenOverrideChangesToRequired_PlacesHold()
     {
-        const string resourceId = "CHEDD.GB.2024.1234567";
+        const string importReference = "CHEDD.GB.2024.1234567";
         const string mrn = "24GB12345678901234";
         var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(importReference)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
@@ -107,7 +100,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         _mockImportTransits
@@ -122,7 +114,7 @@ public class GtoImportPreNotificationProcessorTests
             .ReturnsAsync(
                 new ImportTransit
                 {
-                    Id = resourceId,
+                    Id = importReference,
                     TransitOverrideRequired = false,
                     Mrn = mrn,
                 }
@@ -174,7 +166,7 @@ public class GtoImportPreNotificationProcessorTests
         const string mrn = "24GB12345678901234";
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(resourceId)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
@@ -182,7 +174,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         _mockImportTransits
@@ -222,7 +213,7 @@ public class GtoImportPreNotificationProcessorTests
         const string mrn = "24GB12345678901234";
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(resourceId)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "required" })
@@ -230,7 +221,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         _mockImportTransits
@@ -271,7 +261,7 @@ public class GtoImportPreNotificationProcessorTests
         var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(resourceId)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Not Required" })
@@ -279,7 +269,6 @@ public class GtoImportPreNotificationProcessorTests
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
             .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
             .Create();
 
         _mockImportTransits
@@ -348,7 +337,7 @@ public class GtoImportPreNotificationProcessorTests
         var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture()
+            .ImportPreNotificationFixture(resourceId)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Not Required" })

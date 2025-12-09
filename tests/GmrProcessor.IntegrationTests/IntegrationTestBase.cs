@@ -8,6 +8,7 @@ using GmrProcessor.Utils.Mongo;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Environment = System.Environment;
 
 namespace GmrProcessor.IntegrationTests;
@@ -47,6 +48,8 @@ public abstract class IntegrationTestBase
         sc.AddOptions<LocalStackOptions>().Bind(Configuration);
         sc.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
         sc.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
+        sc.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
+
         sc.AddValidateOptions<MongoConfig>(MongoConfig.SectionName);
         sc.AddSqsClient();
 
@@ -78,6 +81,9 @@ public abstract class IntegrationTestBase
         var sqsClient = ServiceProvider.GetRequiredService<IAmazonSQS>();
         return (sqsClient, (await sqsClient.GetQueueUrlAsync(queueName)).QueueUrl);
     }
+
+    protected T GetConfig<T>()
+        where T : class => ServiceProvider.GetRequiredService<IOptions<T>>().Value;
 
     protected static async Task WaitForMessageConsumed(IAmazonSQS sqsClient, string queueUrl)
     {

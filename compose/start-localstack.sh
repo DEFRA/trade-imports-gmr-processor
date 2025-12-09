@@ -7,6 +7,7 @@ export AWS_SECRET_ACCESS_KEY=test
 QUEUE_NAMES=(
     "trade_imports_data_upserted_gmr_processor_gto"
     "trade_imports_matched_gmrs_processor_gto"
+    "trade_imports_matched_gmrs_gmr_processor_match"
 )
 SQS_ENDPOINT_URL="http://localhost:4566"
 
