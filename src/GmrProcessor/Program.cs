@@ -107,6 +107,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
+    builder.Services.AddSingleton<IServiceBusSenderService, ServiceBusSenderService>();
 
     builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 

@@ -57,7 +57,11 @@ public class ImportMatchedGmrsProcessor(
         if (bulkOperations.Count > 0)
         {
             var messages = enumerable.Select(um => new ImportMatchMessage() { ImportReference = um, Match = true });
+<<<<<<< HEAD
             await tradeImportsServiceBus.SendMessagesAsync(
+=======
+            await serviceBusSenderService.SendMessagesAsync(
+>>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
                 messages,
                 serviceBusOptions.Value.ImportMatchResultQueueName,
                 cancellationToken

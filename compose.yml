@@ -51,7 +51,11 @@ services:
       DataApi__BaseAddress: "http://wiremock"
       GvmsApi__ClientId: ${GVMS_API_CLIENT_ID}
       GvmsApi__ClientSecret: ${GVMS_API_CLIENT_SECRET}
+<<<<<<< HEAD
       TradeImportsServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
+=======
+      ServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
+>>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
       Mongo__DatabaseUri: mongodb://mongodb:27017/
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
@@ -65,7 +69,11 @@ services:
     environment:
       SQL_WAIT_INTERVAL: 0
       SQL_SERVER: sqledge
+<<<<<<< HEAD
       MSSQL_SA_PASSWORD: "secretPassword!"
+=======
+      MSSQL_SA_PASSWORD: "s4usag3s!"
+>>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
       ACCEPT_EULA: "Y"
     depends_on:
       sqledge:
@@ -106,7 +114,11 @@ services:
     #    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
+<<<<<<< HEAD
       MSSQL_SA_PASSWORD: "secretPassword!"
+=======
+      MSSQL_SA_PASSWORD: "s4usag3s!"
+>>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
 
   wiremock:
     environment:
