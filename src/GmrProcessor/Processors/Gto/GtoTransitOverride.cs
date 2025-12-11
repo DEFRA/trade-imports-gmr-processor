@@ -2,9 +2,9 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
 namespace GmrProcessor.Processors.Gto;
 
-public class TransitOverride
+public class GtoTransitOverride
 {
-    private TransitOverride(bool isOverrideRequired, string reason)
+    private GtoTransitOverride(bool isOverrideRequired, string reason)
     {
         IsOverrideRequired = isOverrideRequired;
         Reason = reason;
@@ -13,14 +13,14 @@ public class TransitOverride
     public bool IsOverrideRequired { get; }
     public string Reason { get; }
 
-    private static TransitOverride Required(string reason) => new(true, reason);
+    private static GtoTransitOverride Required(string reason) => new(true, reason);
 
-    private static TransitOverride NotRequired(string reason) => new(false, reason);
+    private static GtoTransitOverride NotRequired(string reason) => new(false, reason);
 
     private static readonly string[] s_completeStatusValues = ["rejected", "partially_rejected", "validated"];
     private static readonly string[] s_inspectionRequiredValues = ["required", "inconclusive"];
 
-    public static TransitOverride IsTransitOverrideRequired(ImportPreNotification importPreNotification)
+    public static GtoTransitOverride IsTransitOverrideRequired(ImportPreNotification importPreNotification)
     {
         var inspectionRequired = importPreNotification.PartTwo?.InspectionRequired?.Trim() ?? string.Empty;
         var importStatus = importPreNotification.Status?.Trim() ?? string.Empty;

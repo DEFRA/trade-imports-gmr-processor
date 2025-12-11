@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using AutoFixture;
 using AutoFixture.Dsl;
 using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
+using Gmr = Defra.TradeImportsGmrFinder.GvmsClient.Contract.Gmr;
 
 namespace TestFixtures;
 
@@ -18,6 +19,21 @@ public static class GmrFixtures
     public static IPostprocessComposer<Gmr> WithDateTime(this IPostprocessComposer<Gmr> gmr, DateTimeOffset dateTime)
     {
         return gmr.With(g => g.UpdatedDateTime, dateTime.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
+    }
+
+    public static IPostprocessComposer<Gmr> WithCheckedInCrossingDateTime(
+        this IPostprocessComposer<Gmr> gmr,
+        DateTimeOffset dateTime
+    )
+    {
+        return gmr.With(
+            g => g.CheckedInCrossing,
+            new GmrCheckedInCrossing
+            {
+                LocalDateTimeOfArrival = dateTime.ToString("yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture),
+                RouteId = GetFixture().Create<string>(),
+            }
+        );
     }
 
     public static string GenerateGmrId()

@@ -1,18 +1,19 @@
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Utils.Mongo;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace GmrProcessor.Data.Gto;
+namespace GmrProcessor.Data.Eta;
 
-public class GtoGmrCollection(IMongoDbClientFactory database)
-    : MongoCollectionSet<GtoGmr>(database, CollectionName),
-        IGtoGmrCollection
+public class EtaGmrCollection(IMongoDbClientFactory database)
+    : MongoCollectionSet<EtaGmr>(database, CollectionName),
+        IEtaGmrCollection
 {
-    public const string CollectionName = "GtoGmr";
+    public const string CollectionName = "EtaGmr";
 
-    public async Task<GtoGmr> UpdateOrInsert(GtoGmr gmr, CancellationToken cancellationToken)
+    public async Task<EtaGmr?> UpdateOrInsert(EtaGmr gmr, CancellationToken cancellationToken)
     {
-        var idFilter = Builders<GtoGmr>.Filter.Where(x => x.Id == gmr.Gmr.GmrId);
+        var idFilter = Builders<EtaGmr>.Filter.Where(x => x.Id == gmr.Gmr.GmrId);
 
         var newUpdatedDateTime = gmr.UpdatedDateTime;
 
@@ -25,7 +26,7 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
             }
         );
 
-        var updatePipeline = Builders<GtoGmr>.Update.Pipeline(
+        var updatePipeline = Builders<EtaGmr>.Update.Pipeline(
             new[]
             {
                 new BsonDocument(
@@ -56,16 +57,8 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
         return await Collection.FindOneAndUpdateAsync(
             filter: idFilter,
             update: updatePipeline,
-            options: new FindOneAndUpdateOptions<GtoGmr> { IsUpsert = true, ReturnDocument = ReturnDocument.After },
+            options: new FindOneAndUpdateOptions<EtaGmr> { IsUpsert = true, ReturnDocument = ReturnDocument.Before },
             cancellationToken: cancellationToken
         );
-    }
-
-    public async Task UpdateHoldStatus(string gmrId, bool holdStatus, CancellationToken cancellationToken)
-    {
-        var filter = Builders<GtoGmr>.Filter.Where(x => x.Id == gmrId);
-        var update = Builders<GtoGmr>.Update.Set(x => x.HoldStatus, holdStatus);
-
-        await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }
 }

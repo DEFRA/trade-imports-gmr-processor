@@ -15,7 +15,7 @@ public class GtoImportPreNotificationProcessorTests
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransits = new();
     private readonly Mock<IGvmsApiClientService> _mockGvmsApiClientService = new();
     private readonly Mock<IGtoMatchedGmrRepository> _mockGtoMatchedGmrRepository = new();
-    private readonly Mock<IImportTransitRepository> _mockImportTransitRepository = new();
+    private readonly Mock<IGtoImportTransitRepository> _mockImportTransitRepository = new();
     private readonly GtoImportPreNotificationProcessor _processor;
 
     public GtoImportPreNotificationProcessorTests()

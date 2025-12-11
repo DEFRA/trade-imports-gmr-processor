@@ -3,7 +3,7 @@ using GmrProcessor.Processors.Gto;
 
 namespace GmrProcessor.Tests.Processors.Gto;
 
-public class TransitOverrideTests
+public class GtoTransitOverrideTests
 {
     [Theory]
     [InlineData("REJECTED")]
@@ -17,7 +17,7 @@ public class TransitOverrideTests
             PartTwo = new PartTwo { InspectionRequired = "Required" },
         };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeFalse();
         result.Reason.Should().Be($"Import status is complete : '{status}'");
@@ -36,7 +36,7 @@ public class TransitOverrideTests
             PartTwo = new PartTwo { InspectionRequired = inspectionRequired },
         };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeTrue();
         result.Reason.Should().Be("Transit Override Required");
@@ -51,7 +51,7 @@ public class TransitOverrideTests
             PartTwo = new PartTwo { InspectionRequired = "Not Required" },
         };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeFalse();
         result.Reason.Should().Be("Inspection is not required : 'Not Required'");
@@ -66,7 +66,7 @@ public class TransitOverrideTests
             PartTwo = new PartTwo { InspectionRequired = "Required" },
         };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeFalse();
         result.Reason.Should().Be("Import status is complete : 'Validated'");
@@ -77,7 +77,7 @@ public class TransitOverrideTests
     {
         var importPreNotification = new ImportPreNotification { Status = "SUBMITTED", PartTwo = null };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeFalse();
         result.Reason.Should().Be("Inspection is not required : ''");
@@ -92,7 +92,7 @@ public class TransitOverrideTests
             PartTwo = new PartTwo { InspectionRequired = null },
         };
 
-        var result = TransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var result = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         result.IsOverrideRequired.Should().BeFalse();
         result.Reason.Should().Be("Inspection is not required : ''");

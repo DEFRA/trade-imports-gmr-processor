@@ -15,7 +15,7 @@ services:
       - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
       - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
     healthcheck:
-      test: ["CMD", "curl", "localhost:4566"]
+      test: ["CMD", "test", "-f", "/tmp/ready"]
       interval: 5s
       start_period: 5s
       retries: 3
