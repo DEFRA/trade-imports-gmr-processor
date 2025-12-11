@@ -1,13 +1,20 @@
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
+using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Services;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 namespace GmrProcessor.Processors.ImportGmrMatching;
 
-public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoContext mongoContext)
-    : IImportMatchedGmrsProcessor
+public class ImportMatchedGmrsProcessor(
+    ITradeImportsDataApiClient api,
+    IMongoContext mongoContext,
+    IServiceBusSenderService serviceBusSenderService,
+    IOptions<ServiceBusOptions> serviceBusOptions
+) : IImportMatchedGmrsProcessor
 {
     public async Task<object> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
@@ -27,7 +34,8 @@ public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoCo
 
         var unmatched = relatedImports.Except(previouslyMatched.Select(m => m.Id));
 
-        var bulkOperations = unmatched
+        var enumerable = unmatched as string[] ?? unmatched.ToArray();
+        var bulkOperations = enumerable
             .Select(um =>
             {
                 var notification = new MatchedImportNotification
@@ -48,6 +56,12 @@ public class ImportMatchedGmrsProcessor(ITradeImportsDataApiClient api, IMongoCo
 
         if (bulkOperations.Count > 0)
         {
+            var messages = enumerable.Select(um => new ImportMatchMessage() { ImportReference = um, Match = true });
+            await serviceBusSenderService.SendMessagesAsync(
+                messages,
+                serviceBusOptions.Value.ImportMatchResultQueueName,
+                cancellationToken
+            );
             await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
         }
 

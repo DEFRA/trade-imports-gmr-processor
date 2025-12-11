@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.SQS" Version="3.7.502.6" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <PackageReference Include="Defra.TradeImportsDataApi.Api.Client" Version="0.37.0" />
     <PackageReference Include="Defra.TradeImportsDataApi.Domain" Version="0.32.0" />
     <PackageReference Include="Defra.TradeImportsGmrFinder.Domain" Version="1.0.1" />

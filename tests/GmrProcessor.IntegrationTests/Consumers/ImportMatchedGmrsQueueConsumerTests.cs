@@ -1,21 +1,27 @@
 using System.Text.Json;
 using Amazon.SQS.Model;
 using AutoFixture;
+using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using GmrProcessor.IntegrationTests.Clients;
+using GmrProcessor.Processors.ImportGmrMatching;
 using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-[Collection("UsesWireMockClient")]
-public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) : IntegrationTestBase
+[Collection("UsesWireMockAndServiceBusClient")]
+public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
+    : IntegrationTestBase
 {
     [Fact]
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromImports()
     {
+        var serviceBusOptions = GetConfig<ServiceBusOptions>();
+        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
+        await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
+
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
         var expectedImport = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
@@ -26,7 +32,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
             ImportPreNotificationFixtures.ImportPreNotificationResponseFixture(expectedImport).Create()
         );
 
-        var matchedGmrsConfig = ServiceProvider.GetRequiredService<IOptions<ImportMatchedGmrsQueueOptions>>().Value;
+        var matchedGmrsConfig = GetConfig<ImportMatchedGmrsQueueOptions>();
         var (matchedGmrsClient, matchedGmrsQueueUrl) = await GetSqsClient(matchedGmrsConfig.QueueName);
 
         var matchedGmrEvent = new MatchedGmr { Mrn = expectedMrn, Gmr = GmrFixtures.GmrFixture().Create() };
@@ -39,6 +45,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
         await matchedGmrsClient.SendMessageAsync(message, TestContext.Current.CancellationToken);
         await WaitForMessageConsumed(matchedGmrsClient, matchedGmrsQueueUrl);
 
+        // Then : match is written to DB
         var item = await AsyncWaiter.WaitForAsync(
             async () =>
             {
@@ -53,13 +60,43 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
         item.Should().NotBeNull();
         item.Id.Should().BeEquivalentTo(expectedImport.ReferenceNumber);
         item.Mrn.Should().BeEquivalentTo(matchedGmrEvent.Mrn);
+
+        // Then : message is sent to ASB
+        var receiver = serviceBusClient.Receiver;
+        var serviceBusReceivedMessage = new List<ServiceBusReceivedMessage>();
+        var allMessages = await AsyncWaiter.WaitForAsync(
+            async () =>
+            {
+                var receivedMessages = await receiver.ReceiveMessagesAsync(
+                    10,
+                    TimeSpan.FromSeconds(1),
+                    TestContext.Current.CancellationToken
+                );
+                serviceBusReceivedMessage.AddRange(receivedMessages);
+                return serviceBusReceivedMessage.Count >= 1 ? serviceBusReceivedMessage : null;
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(allMessages);
+        allMessages.Count.Should().Be(1, "Too many messages received");
+
+        var importMatchMessage = allMessages[0].Body.ToObjectFromJson<ImportMatchMessage>();
+
+        Assert.NotNull(importMatchMessage);
+        importMatchMessage.ImportReference.Should().Be(expectedImport.ReferenceNumber);
+        importMatchMessage.Match.Should().BeTrue();
     }
 
     [Fact]
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromTransits()
     {
+        var serviceBusOptions = GetConfig<ServiceBusOptions>();
+        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
+        await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
+
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
-        var expectedTransit = ImportPreNotificationFixtures.GenerateRandomReference();
+        var expectedTransitReference = ImportPreNotificationFixtures.GenerateRandomReference();
 
         await wireMockClient.MockImportPreNotificationsByMrn(expectedMrn);
 
@@ -67,7 +104,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
         var (sqsClient, queueUrl) = await GetSqsClient(dataEventsQueueConfig.QueueName);
 
         var transitImportPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(expectedTransit)
+            .ImportPreNotificationFixture(expectedTransitReference)
             .With(i => i.Status, "SUBMITTED")
             .With(i => i.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(i => i.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = expectedMrn }]);
@@ -96,7 +133,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
             async () =>
             {
                 return await Mongo.MatchedImportNotifications.FindOne(
-                    p => p.Mrn == expectedMrn && p.Id == expectedTransit,
+                    p => p.Mrn == expectedMrn && p.Id == expectedTransitReference,
                     TestContext.Current.CancellationToken
                 );
             },
@@ -104,7 +141,33 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient) 
         );
 
         item.Should().NotBeNull();
-        item.Id.Should().BeEquivalentTo(expectedTransit);
+        item.Id.Should().BeEquivalentTo(expectedTransitReference);
         item.Mrn.Should().BeEquivalentTo(matchedGmrEvent.Mrn);
+
+        // Then : message is sent to ASB
+        var receiver = serviceBusClient.Receiver;
+        var serviceBusReceivedMessage = new List<ServiceBusReceivedMessage>();
+        var allMessages = await AsyncWaiter.WaitForAsync(
+            async () =>
+            {
+                var receivedMessages = await receiver.ReceiveMessagesAsync(
+                    10,
+                    TimeSpan.FromSeconds(1),
+                    TestContext.Current.CancellationToken
+                );
+                serviceBusReceivedMessage.AddRange(receivedMessages);
+                return serviceBusReceivedMessage.Count >= 1 ? serviceBusReceivedMessage : null;
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(allMessages);
+        allMessages.Count.Should().Be(1, "Too many messages received");
+
+        var importMatchMessage = allMessages[0].Body.ToObjectFromJson<ImportMatchMessage>();
+
+        Assert.NotNull(importMatchMessage);
+        importMatchMessage.ImportReference.Should().Be(expectedTransitReference);
+        importMatchMessage.Match.Should().BeTrue();
     }
 }

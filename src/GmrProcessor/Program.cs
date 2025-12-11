@@ -67,6 +67,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
     builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
+    builder.Services.AddValidateOptions<ServiceBusOptions>(ServiceBusOptions.SectionName);
 
     builder.Services.AddHeaderPropagation(options =>
     {
@@ -90,6 +91,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
+    builder.Services.AddSingleton<IServiceBusSenderService, ServiceBusSenderService>();
 
     builder.Services.AddHostedService<DataEventsQueueConsumer>();
     builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();

@@ -40,6 +40,8 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_started
+      asb:
+        condition: service_healthy
     env_file:
       - "compose/aws.env"
     environment:
@@ -49,6 +51,7 @@ services:
       DataApi__BaseAddress: "http://wiremock"
       GvmsApi__ClientId: ${GVMS_API_CLIENT_ID}
       GvmsApi__ClientSecret: ${GVMS_API_CLIENT_SECRET}
+      ServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
       Mongo__DatabaseUri: mongodb://mongodb:27017/
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
@@ -56,6 +59,54 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       SQS_ENDPOINT: http://localstack:4566
       USE_LOCALSTACK: true
+
+  asb-backend:
+    container_name: processor-asb-backend
+    environment:
+      SQL_WAIT_INTERVAL: 0
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: "s4usag3s!"
+      ACCEPT_EULA: "Y"
+    depends_on:
+      sqledge:
+        condition: service_healthy
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+    pull_policy: always
+    volumes:
+      - "./compose/asb.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
+
+  asb:
+    container_name: processor-asb
+    image: alpine/curl:latest
+    depends_on:
+      asb-backend:
+        condition: service_started
+    command: ["tail", "-f", "/dev/null"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://asb-backend:5300/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  sqledge:
+    container_name: processor-sqledge
+    healthcheck:
+      interval: 5s
+      retries: 10
+      start_period: 5s
+      test: timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433'
+      timeout: 5s
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    #    On some platforms there are compatibility issues with running Azure SQL Edge e.g. M1 Macs with later Docker versions.
+    #    If SQL Edge does not work for you, try swapping out with SQL Server image instead
+    #    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "s4usag3s!"
 
   wiremock:
     environment:
