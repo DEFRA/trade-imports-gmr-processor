@@ -49,7 +49,7 @@ public abstract class IntegrationTestBase
         sc.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(GtoDataEventsQueueConsumerOptions.SectionName);
         sc.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
         sc.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
-        sc.AddValidateOptions<ServiceBusOptions>(ServiceBusOptions.SectionName);
+        sc.AddValidateOptions<TradeImportsServiceBusOptions>(TradeImportsServiceBusOptions.SectionName);
 
         sc.AddValidateOptions<MongoConfig>(MongoConfig.SectionName);
         sc.AddSqsClient();

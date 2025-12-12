@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsDataApi.Api.Client;
 using FluentValidation;
 using GmrProcessor.Config;
@@ -14,6 +15,7 @@ using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
+using Microsoft.Extensions.Azure;
 using MongoDB.Driver;
 using MongoDB.Driver.Authentication.AWS;
 using Serilog;
@@ -72,7 +74,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     );
     builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
-    builder.Services.AddValidateOptions<ServiceBusOptions>(ServiceBusOptions.SectionName);
+    builder.Services.AddValidateOptions<TradeImportsServiceBusOptions>(TradeImportsServiceBusOptions.SectionName);
 
     builder.Services.AddHeaderPropagation(options =>
     {
@@ -80,6 +82,24 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         if (!string.IsNullOrWhiteSpace(traceHeader))
         {
             options.Headers.Add(traceHeader);
+        }
+    });
+
+    builder.Services.AddAzureClients(azureBuilder =>
+    {
+        var serviceBusOptions = builder
+            .Configuration.GetSection(TradeImportsServiceBusOptions.SectionName)
+            .Get<TradeImportsServiceBusOptions>();
+        azureBuilder.AddServiceBusClient(serviceBusOptions!.ConnectionString);
+
+        string[] queueNames = [serviceBusOptions.ImportMatchResultQueueName];
+        foreach (var queueName in queueNames)
+        {
+            azureBuilder
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                    (_, _, provider) => provider.GetService<ServiceBusClient>()?.CreateSender(queueName)!
+                )
+                .WithName(queueName);
         }
     });
 
@@ -100,7 +120,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
-    builder.Services.AddSingleton<IServiceBusSenderService, ServiceBusSenderService>();
+
+    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsTradeImportsServiceBus>();
 
     builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();

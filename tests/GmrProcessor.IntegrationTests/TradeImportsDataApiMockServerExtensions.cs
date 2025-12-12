@@ -1,6 +1,7 @@
 using System.Net;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
+using GmrProcessor.IntegrationTests.Clients;
 using WireMock.Client.Extensions;
 
 namespace GmrProcessor.IntegrationTests;

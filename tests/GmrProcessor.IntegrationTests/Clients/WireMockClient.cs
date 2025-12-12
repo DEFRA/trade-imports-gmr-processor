@@ -1,7 +1,7 @@
 using RestEase;
 using WireMock.Client;
 
-namespace GmrProcessor.IntegrationTests;
+namespace GmrProcessor.IntegrationTests.Clients;
 
 public class WireMockClient
 {

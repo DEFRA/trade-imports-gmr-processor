@@ -11,14 +11,15 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-[Collection("UsesWireMockAndServiceBusClient")]
 public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
-    : IntegrationTestBase
+    : IntegrationTestBase,
+        IClassFixture<WireMockClient>,
+        IClassFixture<ServiceBusFixture>
 {
     [Fact]
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromImports()
     {
-        var serviceBusOptions = GetConfig<ServiceBusOptions>();
+        var serviceBusOptions = GetConfig<TradeImportsServiceBusOptions>();
         var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
@@ -91,7 +92,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, 
     [Fact]
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromTransits()
     {
-        var serviceBusOptions = GetConfig<ServiceBusOptions>();
+        var serviceBusOptions = GetConfig<TradeImportsServiceBusOptions>();
         var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 

@@ -19,7 +19,7 @@ public class ImportMatchedGmrsProcessorTests
     private readonly Mock<IMongoCollectionSet<MatchedImportNotification>> _mockMatchedImportNotificationsCollection =
         new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransitsCollection = new();
-    private readonly Mock<IServiceBusSenderService> _mockServiceBusSenderService = new();
+    private readonly Mock<ITradeImportsServiceBus> _mockServiceBusSenderService = new();
     private readonly ImportMatchedGmrsProcessor _processor;
 
     public ImportMatchedGmrsProcessorTests()
@@ -33,7 +33,7 @@ public class ImportMatchedGmrsProcessorTests
             _mockMongoContext.Object,
             _mockServiceBusSenderService.Object,
             Options.Create(
-                new ServiceBusOptions
+                new TradeImportsServiceBusOptions
                 {
                     ConnectionString = "",
                     ImportMatchResultQueueName = "ImportMatchResultQueueName",

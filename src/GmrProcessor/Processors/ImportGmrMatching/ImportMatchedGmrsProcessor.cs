@@ -12,8 +12,8 @@ namespace GmrProcessor.Processors.ImportGmrMatching;
 public class ImportMatchedGmrsProcessor(
     ITradeImportsDataApiClient api,
     IMongoContext mongoContext,
-    IServiceBusSenderService serviceBusSenderService,
-    IOptions<ServiceBusOptions> serviceBusOptions
+    ITradeImportsServiceBus tradeImportsServiceBus,
+    IOptions<TradeImportsServiceBusOptions> serviceBusOptions
 ) : IImportMatchedGmrsProcessor
 {
     public async Task<object> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
@@ -57,7 +57,7 @@ public class ImportMatchedGmrsProcessor(
         if (bulkOperations.Count > 0)
         {
             var messages = enumerable.Select(um => new ImportMatchMessage() { ImportReference = um, Match = true });
-            await serviceBusSenderService.SendMessagesAsync(
+            await tradeImportsServiceBus.SendMessagesAsync(
                 messages,
                 serviceBusOptions.Value.ImportMatchResultQueueName,
                 cancellationToken

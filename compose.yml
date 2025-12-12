@@ -51,7 +51,7 @@ services:
       DataApi__BaseAddress: "http://wiremock"
       GvmsApi__ClientId: ${GVMS_API_CLIENT_ID}
       GvmsApi__ClientSecret: ${GVMS_API_CLIENT_SECRET}
-      ServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
+      TradeImportsServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
       Mongo__DatabaseUri: mongodb://mongodb:27017/
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
