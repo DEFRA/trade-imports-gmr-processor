@@ -31,7 +31,7 @@ public class GtoImportPreNotificationProcessor(
             return;
         }
 
-        var transitOverride = GtoTransitOverride.IsTransitOverrideRequired(importPreNotification);
+        var transitOverride = TransitOverride.IsTransitOverrideRequired(importPreNotification);
 
         var filter = Builders<ImportTransit>.Filter.Eq(x => x.Id, reference);
         var update = Builders<ImportTransit>
