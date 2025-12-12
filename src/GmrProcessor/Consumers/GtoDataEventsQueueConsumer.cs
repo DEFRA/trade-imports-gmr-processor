@@ -11,14 +11,14 @@ using Microsoft.Extensions.Options;
 
 namespace GmrProcessor.Consumers;
 
-public sealed class DataEventsQueueConsumer(
-    ILogger<DataEventsQueueConsumer> logger,
+public sealed class GtoDataEventsQueueConsumer(
+    ILogger<GtoDataEventsQueueConsumer> logger,
     IAmazonSQS sqsClient,
-    IOptions<DataEventsQueueConsumerOptions> options,
+    IOptions<GtoDataEventsQueueConsumerOptions> options,
     IGtoImportPreNotificationProcessor importPreNotificationProcessor
-) : SqsConsumer<DataEventsQueueConsumer>(logger, sqsClient, options.Value.QueueName)
+) : SqsConsumer<GtoDataEventsQueueConsumer>(logger, sqsClient, options.Value.QueueName)
 {
-    private readonly ILogger<DataEventsQueueConsumer> _logger = logger;
+    private readonly ILogger<GtoDataEventsQueueConsumer> _logger = logger;
 
     protected override int WaitTimeSeconds { get; } = options.Value.WaitTimeSeconds;
 

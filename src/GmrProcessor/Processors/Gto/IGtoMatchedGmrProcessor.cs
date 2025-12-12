@@ -1,3 +1,3 @@
 namespace GmrProcessor.Processors.Gto;
 
-public interface IGtoMatchedGmrProcessor : IMatchedGmrProcessor<GtoMatchedGmrProcessResult>;
+public interface IGtoMatchedGmrProcessor : IMatchedGmrProcessor<GtoMatchedGmrProcessorResult>;

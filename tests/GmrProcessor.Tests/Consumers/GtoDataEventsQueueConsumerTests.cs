@@ -15,18 +15,18 @@ using TestFixtures;
 
 namespace GmrProcessor.Tests.Consumers;
 
-public class DataEventsQueueConsumerTests
+public class GtoDataEventsQueueConsumerTests
 {
     private readonly Mock<IGtoImportPreNotificationProcessor> _importPreNotificationProcessor = new();
-    private readonly DataEventsQueueConsumer _consumer;
+    private readonly GtoDataEventsQueueConsumer _consumer;
 
-    public DataEventsQueueConsumerTests()
+    public GtoDataEventsQueueConsumerTests()
     {
-        _consumer = new DataEventsQueueConsumer(
-            NullLogger<DataEventsQueueConsumer>.Instance,
+        _consumer = new GtoDataEventsQueueConsumer(
+            NullLogger<GtoDataEventsQueueConsumer>.Instance,
             new Mock<IAmazonSQS>().Object,
             Options.Create(
-                new DataEventsQueueConsumerOptions
+                new GtoDataEventsQueueConsumerOptions
                 {
                     QueueName = "trade_imports_data_upserted_gmr_processor_gto",
                     WaitTimeSeconds = 1,
@@ -94,7 +94,7 @@ public class DataEventsQueueConsumerTests
 
     private Task InvokeProcessMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        var method = typeof(DataEventsQueueConsumer).GetMethod(
+        var method = typeof(GtoDataEventsQueueConsumer).GetMethod(
             "ProcessMessageAsync",
             BindingFlags.Instance | BindingFlags.NonPublic
         )!;

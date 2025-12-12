@@ -100,7 +100,7 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, 
 
         await wireMockClient.MockImportPreNotificationsByMrn(expectedMrn);
 
-        var dataEventsQueueConfig = GetConfig<DataEventsQueueConsumerOptions>();
+        var dataEventsQueueConfig = GetConfig<GtoDataEventsQueueConsumerOptions>();
         var (sqsClient, queueUrl) = await GetSqsClient(dataEventsQueueConfig.QueueName);
 
         var transitImportPreNotification = ImportPreNotificationFixtures

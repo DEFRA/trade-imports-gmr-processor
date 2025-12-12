@@ -26,7 +26,9 @@ public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
             TestContext.Current.CancellationToken
         );
 
-        var importTransitConfig = ServiceProvider.GetRequiredService<IOptions<DataEventsQueueConsumerOptions>>().Value;
+        var importTransitConfig = ServiceProvider
+            .GetRequiredService<IOptions<GtoDataEventsQueueConsumerOptions>>()
+            .Value;
         var (importTransitClient, importTransitQueueUrl) = await GetSqsClient(importTransitConfig.QueueName);
 
         var importPreNotification = new ImportPreNotification

@@ -4,7 +4,9 @@ using FluentValidation;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Eta;
 using GmrProcessor.Extensions;
+using GmrProcessor.Processors.Eta;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Processors.ImportGmrMatching;
 using GmrProcessor.Services;
@@ -64,7 +66,10 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddDataApiHttpClient();
 
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
-    builder.Services.AddValidateOptions<DataEventsQueueConsumerOptions>(DataEventsQueueConsumerOptions.SectionName);
+    builder.Services.AddValidateOptions<EtaMatchedGmrsQueueOptions>(EtaMatchedGmrsQueueOptions.SectionName);
+    builder.Services.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(
+        GtoDataEventsQueueConsumerOptions.SectionName
+    );
     builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<ServiceBusOptions>(ServiceBusOptions.SectionName);
@@ -85,7 +90,11 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<MongoDbInitializer>();
 
     builder.Services.AddSqsClient();
-    builder.Services.AddSingleton<IImportTransitRepository, ImportTransitRepository>();
+
+    builder.Services.AddSingleton<IEtaGmrCollection, EtaGmrCollection>();
+    builder.Services.AddSingleton<IEtaMatchedGmrProcessor, EtaMatchedGmrProcessor>();
+
+    builder.Services.AddSingleton<IGtoImportTransitRepository, GtoImportTransitRepository>();
     builder.Services.AddSingleton<IGtoMatchedGmrRepository, GtoMatchedGmrRepository>();
     builder.Services.AddSingleton<IGvmsApiClientService, GvmsApiClientService>();
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
@@ -93,7 +102,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
     builder.Services.AddSingleton<IServiceBusSenderService, ServiceBusSenderService>();
 
-    builder.Services.AddHostedService<DataEventsQueueConsumer>();
+    builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
+    builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
     builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
 

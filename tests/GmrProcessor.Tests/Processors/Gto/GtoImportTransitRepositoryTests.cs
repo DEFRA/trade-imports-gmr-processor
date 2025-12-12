@@ -7,16 +7,16 @@ using TestFixtures;
 
 namespace GmrProcessor.Tests.Processors.Gto;
 
-public class ImportTransitRepositoryTests
+public class GtoImportTransitRepositoryTests
 {
     private readonly Mock<IMongoContext> _mongo = new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransits = new();
-    private readonly ImportTransitRepository _repo;
+    private readonly GtoImportTransitRepository _repo;
 
-    public ImportTransitRepositoryTests()
+    public GtoImportTransitRepositoryTests()
     {
         _mongo.Setup(m => m.ImportTransits).Returns(_mockImportTransits.Object);
-        _repo = new ImportTransitRepository(_mongo.Object);
+        _repo = new GtoImportTransitRepository(_mongo.Object);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 namespace GmrProcessor.Processors.Gto;
 
-public enum GtoMatchedGmrProcessResult
+public enum GtoMatchedGmrProcessorResult
 {
     SkippedNoTransit,
     SkippedOldGmr,
