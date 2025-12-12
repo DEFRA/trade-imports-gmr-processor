@@ -11,7 +11,6 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-[Collection("UsesWireMockAndServiceBusClient")]
 public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
     : IntegrationTestBase,
         IClassFixture<WireMockClient>,

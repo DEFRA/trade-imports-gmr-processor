@@ -51,11 +51,7 @@ services:
       DataApi__BaseAddress: "http://wiremock"
       GvmsApi__ClientId: ${GVMS_API_CLIENT_ID}
       GvmsApi__ClientSecret: ${GVMS_API_CLIENT_SECRET}
-<<<<<<< HEAD
       TradeImportsServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
-=======
-      ServiceBus__ConnectionString: Endpoint=sb://asb-backend;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true
->>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
       Mongo__DatabaseUri: mongodb://mongodb:27017/
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2

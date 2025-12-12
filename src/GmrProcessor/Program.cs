@@ -85,10 +85,23 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         }
     });
 
-    var serviceBusOptions = builder
-        .Configuration.GetRequiredSection(TradeImportsServiceBusOptions.SectionName)
-        .Get<TradeImportsServiceBusOptions>()!;
-    builder.Services.AddTradeImportsServiceBus(serviceBusOptions);
+    builder.Services.AddAzureClients(azureBuilder =>
+    {
+        var serviceBusOptions = builder
+            .Configuration.GetSection(TradeImportsServiceBusOptions.SectionName)
+            .Get<TradeImportsServiceBusOptions>();
+        azureBuilder.AddServiceBusClient(serviceBusOptions!.ConnectionString);
+
+        string[] queueNames = [serviceBusOptions.ImportMatchResultQueueName];
+        foreach (var queueName in queueNames)
+        {
+            azureBuilder
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                    (_, _, provider) => provider.GetService<ServiceBusClient>()?.CreateSender(queueName)!
+                )
+                .WithName(queueName);
+        }
+    });
 
     MongoClientSettings.Extensions.AddAWSAuthentication();
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
@@ -107,7 +120,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
-    builder.Services.AddSingleton<IServiceBusSenderService, ServiceBusSenderService>();
+
+    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsTradeImportsServiceBus>();
 
     builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 

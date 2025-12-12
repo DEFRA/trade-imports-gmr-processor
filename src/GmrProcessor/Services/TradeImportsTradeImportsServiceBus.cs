@@ -1,27 +1,20 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
-using GmrProcessor.Config;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Azure;
 
 namespace GmrProcessor.Services;
 
-public class ServiceBusSenderService : IServiceBusSenderService, IAsyncDisposable
+public class TradeImportsTradeImportsServiceBus(IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
+    : ITradeImportsServiceBus
 {
-    private readonly ServiceBusClient _serviceBusClient;
-
-    public ServiceBusSenderService(IOptions<ServiceBusOptions> options)
-    {
-        var serviceBusOptions = options.Value;
-        _serviceBusClient = new ServiceBusClient(serviceBusOptions.ConnectionString);
-    }
-
     public async Task SendMessagesAsync<T>(
         IEnumerable<T> messages,
         string queueName,
         CancellationToken cancellationToken = default
     )
     {
-        var sender = _serviceBusClient.CreateSender(queueName);
+        var sender = serviceBusSenderFactory.CreateClient(queueName);
+
         var messageBatch = await sender.CreateMessageBatchAsync(cancellationToken);
 
         foreach (var message in messages)
@@ -47,13 +40,6 @@ public class ServiceBusSenderService : IServiceBusSenderService, IAsyncDisposabl
             await sender.SendMessagesAsync(messageBatch, cancellationToken);
         }
 
-        await sender.DisposeAsync();
         messageBatch.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _serviceBusClient.DisposeAsync();
-        GC.SuppressFinalize(this);
     }
 }
