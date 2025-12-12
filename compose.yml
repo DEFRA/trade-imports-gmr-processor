@@ -65,11 +65,7 @@ services:
     environment:
       SQL_WAIT_INTERVAL: 0
       SQL_SERVER: sqledge
-<<<<<<< HEAD
       MSSQL_SA_PASSWORD: "secretPassword!"
-=======
-      MSSQL_SA_PASSWORD: "s4usag3s!"
->>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
       ACCEPT_EULA: "Y"
     depends_on:
       sqledge:
@@ -111,10 +107,14 @@ services:
     environment:
       ACCEPT_EULA: "Y"
 <<<<<<< HEAD
+<<<<<<< HEAD
       MSSQL_SA_PASSWORD: "secretPassword!"
 =======
       MSSQL_SA_PASSWORD: "s4usag3s!"
 >>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
+=======
+      MSSQL_SA_PASSWORD: "secretPassword!"
+>>>>>>> 4a7a2b5 (PHAIN-217 : Use less secure password public to avoid security warning)
 
   wiremock:
     environment:
