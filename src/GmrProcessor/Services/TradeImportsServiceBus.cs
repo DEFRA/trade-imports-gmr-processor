@@ -1,10 +1,12 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Azure;
 
 namespace GmrProcessor.Services;
 
-public class TradeImportsTradeImportsServiceBus(IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
+[ExcludeFromCodeCoverage]
+public class TradeImportsServiceBus(IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     : ITradeImportsServiceBus
 {
     public async Task SendMessagesAsync<T>(

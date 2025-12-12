@@ -5,7 +5,7 @@ using Moq;
 
 namespace GmrProcessor.Tests.Services;
 
-public class TradeImportsTradeImportsServiceBusTests
+public class TradeImportsServiceBusTests
 {
     [Fact]
     public async Task SendMessagesAsync_CreatesClientForCorrectQueue()
@@ -18,7 +18,7 @@ public class TradeImportsTradeImportsServiceBusTests
 
         mockFactory.Setup(f => f.CreateClient(queueName)).Returns(mockSender.Object);
 
-        var service = new TradeImportsTradeImportsServiceBus(mockFactory.Object);
+        var service = new TradeImportsServiceBus(mockFactory.Object);
 
         try
         {
