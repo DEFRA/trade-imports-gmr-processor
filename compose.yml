@@ -65,7 +65,7 @@ services:
     environment:
       SQL_WAIT_INTERVAL: 0
       SQL_SERVER: sqledge
-      MSSQL_SA_PASSWORD: "s4usag3s!"
+      MSSQL_SA_PASSWORD: "secretPassword!"
       ACCEPT_EULA: "Y"
     depends_on:
       sqledge:
@@ -106,7 +106,7 @@ services:
     #    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "s4usag3s!"
+      MSSQL_SA_PASSWORD: "secretPassword!"
 
   wiremock:
     environment:
