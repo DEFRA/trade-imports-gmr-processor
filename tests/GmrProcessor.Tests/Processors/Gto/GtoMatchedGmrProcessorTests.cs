@@ -15,7 +15,7 @@ public class GtoMatchedGmrProcessorTests
 {
     private readonly Mock<ILogger<GtoMatchedGmrProcessor>> _logger = new();
     private readonly Mock<IGtoMatchedGmrRepository> _mockMatchedGmrRepository = new();
-    private readonly Mock<IImportTransitRepository> _mockImportTransitRepository = new();
+    private readonly Mock<IGtoImportTransitRepository> _mockImportTransitRepository = new();
     private readonly Mock<IGvmsApiClientService> _gvms = new();
     private readonly GtoMatchedGmrProcessor _processor;
 
@@ -39,7 +39,7 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result.Should().Be(GtoMatchedGmrProcessResult.SkippedNoTransit);
+        result.Should().Be(GtoMatchedGmrProcessorResult.SkippedNoTransit);
         _mockMatchedGmrRepository.Verify(
             r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -76,7 +76,7 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result.Should().Be(GtoMatchedGmrProcessResult.HoldPlaced);
+        result.Should().Be(GtoMatchedGmrProcessorResult.HoldPlaced);
         _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -116,7 +116,7 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result.Should().Be(GtoMatchedGmrProcessResult.HoldPlaced);
+        result.Should().Be(GtoMatchedGmrProcessorResult.HoldPlaced);
         _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -150,7 +150,7 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result.Should().Be(GtoMatchedGmrProcessResult.NoHoldChange);
+        result.Should().Be(GtoMatchedGmrProcessorResult.NoHoldChange);
         _gvms.Verify(
             g => g.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -182,7 +182,7 @@ public class GtoMatchedGmrProcessorTests
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
-        result.Should().Be(GtoMatchedGmrProcessResult.SkippedOldGmr);
+        result.Should().Be(GtoMatchedGmrProcessorResult.SkippedOldGmr);
         _gvms.Verify(
             g => g.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never

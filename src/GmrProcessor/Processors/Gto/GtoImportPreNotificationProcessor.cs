@@ -2,6 +2,7 @@ using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using GmrProcessor.Services;
+using GmrProcessor.Utils;
 using MongoDB.Driver;
 
 namespace GmrProcessor.Processors.Gto;
@@ -11,7 +12,7 @@ public class GtoImportPreNotificationProcessor(
     ILogger<GtoImportPreNotificationProcessor> logger,
     IGvmsApiClientService gvmsApiClientService,
     IGtoMatchedGmrRepository matchedGmrRepository,
-    IImportTransitRepository importTransitRepository
+    IGtoImportTransitRepository importTransitRepository
 ) : IGtoImportPreNotificationProcessor
 {
     public async Task ProcessAsync(

@@ -12,7 +12,7 @@ public class TransitImportsTests : IntegrationTestBase
     [Fact]
     public async Task WhenImportPreNotificationReceived_ShouldInsertWithCorrectValues()
     {
-        var config = ServiceProvider.GetRequiredService<IOptions<DataEventsQueueConsumerOptions>>().Value;
+        var config = ServiceProvider.GetRequiredService<IOptions<GtoDataEventsQueueConsumerOptions>>().Value;
         var (sqsClient, queueUrl) = await GetSqsClient(config.QueueName);
 
         var expectedChed = ImportPreNotificationFixtures.GenerateRandomReference();
@@ -54,7 +54,7 @@ public class TransitImportsTests : IntegrationTestBase
     [Fact]
     public async Task WhenImportPreNotificationReceived_ShouldUpdateExistingValues()
     {
-        var config = ServiceProvider.GetRequiredService<IOptions<DataEventsQueueConsumerOptions>>().Value;
+        var config = ServiceProvider.GetRequiredService<IOptions<GtoDataEventsQueueConsumerOptions>>().Value;
         var (sqsClient, queueUrl) = await GetSqsClient(config.QueueName);
 
         var expectedChed = ImportPreNotificationFixtures.GenerateRandomReference();
