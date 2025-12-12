@@ -121,7 +121,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
 
-    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsTradeImportsServiceBus>();
+    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 
     builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 
