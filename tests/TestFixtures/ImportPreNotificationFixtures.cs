@@ -25,6 +25,11 @@ public static class ImportPreNotificationFixtures
     public static IPostprocessComposer<ImportPreNotification> ImportPreNotificationFixture(string reference) =>
         GetFixture().Build<ImportPreNotification>().With(x => x.ReferenceNumber, reference);
 
+    public static IPostprocessComposer<ImportPreNotification> WithMrn(
+        this IPostprocessComposer<ImportPreNotification> notification,
+        string mrn
+    ) => notification.With(x => x.ExternalReferences, [new ExternalReference { Reference = mrn, System = "NCTS" }]);
+
     private static Fixture GetFixture()
     {
         var fixture = new Fixture();

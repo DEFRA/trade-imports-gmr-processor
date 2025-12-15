@@ -84,4 +84,58 @@ public class EtaGmrCollectionTests
         renderedUpdate.Should().Contain("updatedDateTime");
         renderedUpdate.Should().Contain("gmr");
     }
+
+    [Fact]
+    public async Task UpdateOrInsert_ReplacesGmrOnlyWhenIncomingIsNewer()
+    {
+        var gmr = GmrFixtures.GmrFixture().Create();
+        var etaGmr = new EtaGmr
+        {
+            Id = gmr.GmrId,
+            Gmr = gmr,
+            UpdatedDateTime = gmr.GetUpdatedDateTime(),
+        };
+
+        var mockCollection = new Mock<IMongoCollection<EtaGmr>>();
+        UpdateDefinition<EtaGmr>? capturedUpdate = null;
+
+        mockCollection
+            .Setup(c =>
+                c.FindOneAndUpdateAsync(
+                    It.IsAny<FilterDefinition<EtaGmr>>(),
+                    It.IsAny<UpdateDefinition<EtaGmr>>(),
+                    It.IsAny<FindOneAndUpdateOptions<EtaGmr, EtaGmr>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback(
+                (
+                    FilterDefinition<EtaGmr> _,
+                    UpdateDefinition<EtaGmr> u,
+                    FindOneAndUpdateOptions<EtaGmr, EtaGmr> _,
+                    CancellationToken _
+                ) =>
+                {
+                    capturedUpdate = u;
+                }
+            )
+            .Returns(Task.FromResult<EtaGmr>(null!));
+
+        _mongoFactory
+            .Setup(f => f.GetCollection<EtaGmr>(EtaGmrCollection.CollectionName))
+            .Returns(mockCollection.Object);
+
+        var collection = new EtaGmrCollection(_mongoFactory.Object);
+
+        await collection.UpdateOrInsert(etaGmr, CancellationToken.None);
+
+        var renderArgs = new RenderArgs<EtaGmr>(
+            BsonSerializer.SerializerRegistry.GetSerializer<EtaGmr>(),
+            BsonSerializer.SerializerRegistry
+        );
+
+        var renderedUpdate = capturedUpdate!.Render(renderArgs).ToString();
+
+        renderedUpdate.Should().Contain("\"gmr\" : { \"$cond\"");
+    }
 }

@@ -1,13 +1,15 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Text.Json;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
+using GmrProcessor.Config;
 using GmrProcessor.Data.Eta;
 using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Services;
+using Microsoft.Extensions.Options;
 
 namespace GmrProcessor.Processors.Eta;
 
@@ -15,10 +17,13 @@ public class EtaMatchedGmrProcessor(
     ILogger<EtaMatchedGmrProcessor> logger,
     IGtoImportTransitRepository importTransitRepository,
     ITradeImportsDataApiClient tradeImportsDataApi,
-    IEtaGmrCollection etaGmrCollection
+    IEtaGmrCollection etaGmrCollection,
+    ITradeImportsServiceBus tradeImportsServiceBus,
+    IOptions<TradeImportsServiceBusOptions> serviceBusOptions
 ) : IEtaMatchedGmrProcessor
 {
     private const string StateEmbarked = "EMBARKED";
+    private readonly TradeImportsServiceBusOptions _serviceBusOptions = serviceBusOptions.Value;
 
     public async Task<EtaMatchedGmrProcessorResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
@@ -39,7 +44,7 @@ public class EtaMatchedGmrProcessor(
         if (!HasUpdatedCheckedInTime(matchedGmr.Gmr, oldEtaGmrRecord?.Gmr))
         {
             logger.LogInformation(
-                "Skipping an old CheckedInTime ETA GMR item, Gmr: {GmrId}, Mrn: {Mrn}, UpdatedTime: {UpdatedTime}",
+                "Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {GmrId}, Mrn: {Mrn}, UpdatedTime: {UpdatedTime}",
                 matchedGmr.Gmr.GmrId,
                 matchedGmr.Mrn,
                 matchedGmr.Gmr.UpdatedDateTime
@@ -76,10 +81,11 @@ public class EtaMatchedGmrProcessor(
             ReferenceNumber = chedMrn.ChedReference,
         });
 
-        foreach (var message in ipaffsMessages)
-        {
-            logger.LogInformation("I would now send: {Message}", JsonSerializer.Serialize(message));
-        }
+        await tradeImportsServiceBus.SendMessagesAsync(
+            ipaffsMessages,
+            _serviceBusOptions.EtaQueueName,
+            cancellationToken
+        );
 
         return EtaMatchedGmrProcessorResult.UpdatedIpaffs;
     }

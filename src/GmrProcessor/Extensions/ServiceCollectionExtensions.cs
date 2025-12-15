@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
         {
             azureBuilder.AddServiceBusClient(options!.ConnectionString);
 
-            string[] queueNames = [options.ImportMatchResultQueueName];
+            string[] queueNames = [options.EtaQueueName, options.ImportMatchResultQueueName];
             foreach (var queueName in queueNames)
             {
                 azureBuilder
