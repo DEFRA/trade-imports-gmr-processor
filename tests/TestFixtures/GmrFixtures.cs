@@ -13,12 +13,22 @@ public static class GmrFixtures
 
     public static IPostprocessComposer<Gmr> GmrFixture()
     {
-        return GetFixture().Build<Gmr>().With(g => g.GmrId, GenerateGmrId()).WithDateTime(DateTimeOffset.UtcNow);
+        return GetFixture()
+            .Build<Gmr>()
+            .With(g => g.GmrId, GenerateGmrId())
+            .WithDateTime(DateTimeOffset.UtcNow)
+            .WithState("EMBARKED")
+            .WithCheckedInCrossingDateTime(DateTimeOffset.UtcNow);
     }
 
     public static IPostprocessComposer<Gmr> WithDateTime(this IPostprocessComposer<Gmr> gmr, DateTimeOffset dateTime)
     {
         return gmr.With(g => g.UpdatedDateTime, dateTime.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
+    }
+
+    public static IPostprocessComposer<Gmr> WithState(this IPostprocessComposer<Gmr> gmr, string status)
+    {
+        return gmr.With(g => g.State, "EMBARKED");
     }
 
     public static IPostprocessComposer<Gmr> WithCheckedInCrossingDateTime(

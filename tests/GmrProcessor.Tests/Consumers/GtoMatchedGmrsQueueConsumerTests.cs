@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using AutoFixture;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;

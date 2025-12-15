@@ -46,6 +46,7 @@ public abstract class IntegrationTestBase
         var sc = new ServiceCollection();
         sc.AddSingleton(Configuration);
         sc.AddOptions<LocalStackOptions>().Bind(Configuration);
+        sc.AddValidateOptions<EtaMatchedGmrsQueueOptions>(EtaMatchedGmrsQueueOptions.SectionName);
         sc.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(GtoDataEventsQueueConsumerOptions.SectionName);
         sc.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
         sc.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
