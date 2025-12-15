@@ -1,7 +1,7 @@
 using RestEase;
 using WireMock.Client;
 
-namespace GmrProcessor.IntegrationTests;
+namespace GmrProcessor.IntegrationTests.Clients;
 
 public class WireMockClient
 {
@@ -13,6 +13,3 @@ public class WireMockClient
 
     public IWireMockAdminApi WireMockAdminApi { get; } = RestClient.For<IWireMockAdminApi>("http://localhost:9090");
 }
-
-[CollectionDefinition("UsesWireMockClient")]
-public class WireMockClientCollection : ICollectionFixture<WireMockClient>;

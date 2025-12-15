@@ -1,8 +1,11 @@
 using System.Linq.Expressions;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
+using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.ImportGmrMatching;
+using GmrProcessor.Services;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
@@ -16,6 +19,7 @@ public class ImportMatchedGmrsProcessorTests
     private readonly Mock<IMongoCollectionSet<MatchedImportNotification>> _mockMatchedImportNotificationsCollection =
         new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransitsCollection = new();
+    private readonly Mock<ITradeImportsServiceBus> _mockServiceBusSenderService = new();
     private readonly ImportMatchedGmrsProcessor _processor;
 
     public ImportMatchedGmrsProcessorTests()
@@ -24,7 +28,18 @@ public class ImportMatchedGmrsProcessorTests
             .Setup(x => x.MatchedImportNotifications)
             .Returns(_mockMatchedImportNotificationsCollection.Object);
         _mockMongoContext.Setup(x => x.ImportTransits).Returns(_mockImportTransitsCollection.Object);
-        _processor = new ImportMatchedGmrsProcessor(_mockApiClient.Object, _mockMongoContext.Object);
+        _processor = new ImportMatchedGmrsProcessor(
+            _mockApiClient.Object,
+            _mockMongoContext.Object,
+            _mockServiceBusSenderService.Object,
+            Options.Create(
+                new TradeImportsServiceBusOptions
+                {
+                    ConnectionString = "",
+                    ImportMatchResultQueueName = "ImportMatchResultQueueName",
+                }
+            )
+        );
     }
 
     [Fact]
@@ -108,6 +123,16 @@ public class ImportMatchedGmrsProcessorTests
             Assert.NotNull(notification.CreatedDateTime);
             Assert.Contains(notification.Id, new[] { importRef1, importRef2, transitId });
         }
+
+        _mockServiceBusSenderService.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.Is<IEnumerable<ImportMatchMessage>>(m => m.Count() == 3),
+                    "ImportMatchResultQueueName",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]

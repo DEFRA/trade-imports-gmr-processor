@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsDataApi.Api.Client;
 using FluentValidation;
 using GmrProcessor.Config;
@@ -14,6 +15,7 @@ using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
+using Microsoft.Extensions.Azure;
 using MongoDB.Driver;
 using MongoDB.Driver.Authentication.AWS;
 using Serilog;
@@ -72,6 +74,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     );
     builder.Services.AddValidateOptions<GtoMatchedGmrsQueueOptions>(GtoMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<ImportMatchedGmrsQueueOptions>(ImportMatchedGmrsQueueOptions.SectionName);
+    builder.Services.AddValidateOptions<TradeImportsServiceBusOptions>(TradeImportsServiceBusOptions.SectionName);
 
     builder.Services.AddHeaderPropagation(options =>
     {
@@ -81,6 +84,11 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
             options.Headers.Add(traceHeader);
         }
     });
+
+    var serviceBusOptions = builder
+        .Configuration.GetRequiredSection(TradeImportsServiceBusOptions.SectionName)
+        .Get<TradeImportsServiceBusOptions>()!;
+    builder.Services.AddTradeImportsServiceBus(serviceBusOptions);
 
     MongoClientSettings.Extensions.AddAWSAuthentication();
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
@@ -99,6 +107,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
+
+    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 
     builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
