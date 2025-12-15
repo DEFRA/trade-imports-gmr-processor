@@ -28,7 +28,7 @@ public static class GmrFixtures
 
     public static IPostprocessComposer<Gmr> WithState(this IPostprocessComposer<Gmr> gmr, string status)
     {
-        return gmr.With(g => g.State, "EMBARKED");
+        return gmr.With(g => g.State, status);
     }
 
     public static IPostprocessComposer<Gmr> WithCheckedInCrossingDateTime(
