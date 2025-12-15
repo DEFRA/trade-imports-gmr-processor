@@ -110,8 +110,6 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 
-    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
-
     builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
     builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();

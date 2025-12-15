@@ -32,7 +32,18 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
                     "$set",
                     new BsonDocument
                     {
-                        { "gmr", gmr.Gmr.ToBsonDocument() },
+                        {
+                            "gmr",
+                            new BsonDocument(
+                                "$cond",
+                                new BsonArray
+                                {
+                                    incomingIsNewer,
+                                    gmr.Gmr.ToBsonDocument(),
+                                    new BsonDocument("$ifNull", new BsonArray { "$gmr", gmr.Gmr.ToBsonDocument() }),
+                                }
+                            )
+                        },
                         {
                             "updatedDateTime",
                             new BsonDocument(

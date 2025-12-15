@@ -36,6 +36,7 @@ public class ImportMatchedGmrsProcessorTests
                 new TradeImportsServiceBusOptions
                 {
                     ConnectionString = "",
+                    EtaQueueName = "EtaQueueName",
                     ImportMatchResultQueueName = "ImportMatchResultQueueName",
                 }
             )

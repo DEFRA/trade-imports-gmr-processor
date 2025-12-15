@@ -106,15 +106,7 @@ services:
     #    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-<<<<<<< HEAD
-<<<<<<< HEAD
       MSSQL_SA_PASSWORD: "secretPassword!"
-=======
-      MSSQL_SA_PASSWORD: "s4usag3s!"
->>>>>>> 76f17ff (PHAIN-217 : Send match messages to IPAFFS for Azure Service Bus)
-=======
-      MSSQL_SA_PASSWORD: "secretPassword!"
->>>>>>> 4a7a2b5 (PHAIN-217 : Use less secure password public to avoid security warning)
 
   wiremock:
     environment:

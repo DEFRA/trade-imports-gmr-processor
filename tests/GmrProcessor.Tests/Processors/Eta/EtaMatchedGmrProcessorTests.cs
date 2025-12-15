@@ -1,11 +1,15 @@
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
+using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
+using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Eta;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using TestFixtures;
 
@@ -17,6 +21,15 @@ public class EtaMatchedGmrProcessorTests
     private readonly Mock<IGtoImportTransitRepository> _importTransitRepository = new();
     private readonly Mock<ITradeImportsDataApiClient> _tradeImportsDataApi = new();
     private readonly Mock<IEtaGmrCollection> _etaGmrCollection = new();
+    private readonly Mock<ITradeImportsServiceBus> _tradeImportsServiceBus = new();
+    private readonly IOptions<TradeImportsServiceBusOptions> _serviceBusOptions = Options.Create(
+        new TradeImportsServiceBusOptions
+        {
+            ConnectionString = "Endpoint=sb://localhost/",
+            EtaQueueName = "EtaQueueName",
+            ImportMatchResultQueueName = "ImportMatchResultQueueName",
+        }
+    );
     private readonly EtaMatchedGmrProcessor _processor;
 
     public EtaMatchedGmrProcessorTests()
@@ -25,7 +38,9 @@ public class EtaMatchedGmrProcessorTests
             _logger.Object,
             _importTransitRepository.Object,
             _tradeImportsDataApi.Object,
-            _etaGmrCollection.Object
+            _etaGmrCollection.Object,
+            _tradeImportsServiceBus.Object,
+            _serviceBusOptions
         );
     }
 
@@ -40,6 +55,15 @@ public class EtaMatchedGmrProcessorTests
         _etaGmrCollection.Verify(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()), Times.Never);
         _tradeImportsDataApi.VerifyNoOtherCalls();
         _importTransitRepository.VerifyNoOtherCalls();
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -71,6 +95,15 @@ public class EtaMatchedGmrProcessorTests
             r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -93,6 +126,15 @@ public class EtaMatchedGmrProcessorTests
         result.Should().Be(EtaMatchedGmrProcessorResult.SkippedOldGmr);
         _tradeImportsDataApi.VerifyNoOtherCalls();
         _importTransitRepository.VerifyNoOtherCalls();
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -123,6 +165,15 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.NoChedsFound);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -161,6 +212,15 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.UpdatedIpaffs);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.Is<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(m => m.Count() == 1),
+                    "EtaQueueName",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -200,6 +260,15 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.UpdatedIpaffs);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.Is<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(m => m.Count() == 1),
+                    "EtaQueueName",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -248,6 +317,15 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.UpdatedIpaffs);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.Is<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(m => m.Count() == 2),
+                    "EtaQueueName",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -286,6 +364,15 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.UpdatedIpaffs);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.Is<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(m => m.Count() == 1),
+                    "EtaQueueName",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     private static MatchedGmr BuildMatchedGmr(
