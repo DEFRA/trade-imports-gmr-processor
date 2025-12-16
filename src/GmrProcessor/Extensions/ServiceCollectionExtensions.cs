@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
@@ -19,19 +20,31 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTradeImportsServiceBus(
         this IServiceCollection services,
-        TradeImportsServiceBusOptions options
+        TradeImportsServiceBusOptions tradeImportsServiceBusOptions
     )
     {
         services.AddAzureClients(azureBuilder =>
         {
-            azureBuilder.AddServiceBusClient(options!.ConnectionString);
+            azureBuilder.AddServiceBusClient(tradeImportsServiceBusOptions.ConnectionString);
 
-            string[] queueNames = [options.EtaQueueName, options.ImportMatchResultQueueName];
+            string[] queueNames =
+            [
+                tradeImportsServiceBusOptions.EtaQueueName,
+                tradeImportsServiceBusOptions.ImportMatchResultQueueName,
+            ];
             foreach (var queueName in queueNames)
             {
                 azureBuilder
                     .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                        (_, _, provider) => provider.GetService<ServiceBusClient>()?.CreateSender(queueName)!
+                        (options, _, provider) =>
+                        {
+                            options.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                            if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+                            {
+                                options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                            }
+                            return provider.GetRequiredService<ServiceBusClient>().CreateSender(queueName)!;
+                        }
                     )
                     .WithName(queueName);
             }
@@ -119,7 +132,7 @@ public static class ServiceCollectionExtensions
                     c.BaseAddress = new Uri(settings.BaseUri);
                 }
             )
-            .ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>()
+            .ConfigurePrimaryHttpMessageHandler(Proxy.ConfigurePrimaryHttpMessageHandler)
             .AddResilienceHandler(
                 "GvmsApi",
                 (pipelineBuilder, context) =>

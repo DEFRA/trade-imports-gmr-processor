@@ -16,6 +16,7 @@ using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Authentication.AWS;
 using Serilog;
@@ -56,8 +57,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddHttpClient("DefaultClient").AddHeaderPropagation();
 
-    builder.Services.AddTransient<ProxyHttpMessageHandler>();
-    builder.Services.AddHttpClient("proxy").ConfigurePrimaryHttpMessageHandler<ProxyHttpMessageHandler>();
+    builder.Services.AddHttpProxyClient();
+
     builder.Services.AddGvmsApiClient();
 
     builder
@@ -88,6 +89,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     var serviceBusOptions = builder
         .Configuration.GetRequiredSection(TradeImportsServiceBusOptions.SectionName)
         .Get<TradeImportsServiceBusOptions>()!;
+
     builder.Services.AddTradeImportsServiceBus(serviceBusOptions);
 
     MongoClientSettings.Extensions.AddAWSAuthentication();
