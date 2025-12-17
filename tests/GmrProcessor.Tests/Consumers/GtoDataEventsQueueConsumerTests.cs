@@ -39,6 +39,7 @@ public class GtoDataEventsQueueConsumerTests
     [Fact]
     public async Task ProcessMessageAsync_WhenResourceTypeIsImportPreNotification_SendsToImportPreNotificationProcessor()
     {
+        var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         var body = JsonSerializer.Serialize(
             ImportPreNotificationFixtures
                 .ImportPreNotificationResourceEventFixture(
@@ -46,7 +47,8 @@ public class GtoDataEventsQueueConsumerTests
                         .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
                         .Create()
                 )
-                .Create()
+                .Create(),
+            serializerOptions
         );
 
         var message = new Message
@@ -90,6 +92,39 @@ public class GtoDataEventsQueueConsumerTests
                 processor.ProcessAsync(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+    }
+
+    [Fact]
+    public void Deserialize_WithCamelCasePayload_DefaultOptionsWouldHaveFailed()
+    {
+        var reference = ImportPreNotificationFixtures.GenerateRandomReference();
+        var defaultJsonSerializerOptions = new JsonSerializerOptions();
+        var webJsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        var payload = JsonSerializer.Serialize(
+            ImportPreNotificationFixtures
+                .ImportPreNotificationResourceEventFixture(
+                    ImportPreNotificationFixtures.ImportPreNotificationFixture(reference).Create()
+                )
+                .Create(),
+            webJsonSerializerOptions
+        );
+
+        payload.Should().Contain("\"resourceId\"");
+        payload.Should().Contain("\"operation\"");
+
+        var act = () =>
+            JsonSerializer.Deserialize<ResourceEvent<ImportPreNotification>>(payload, defaultJsonSerializerOptions);
+
+        act.Should().Throw<JsonException>().Which.Message.Should().Contain("missing required properties");
+
+        var deserialised = JsonSerializer.Deserialize<ResourceEvent<ImportPreNotification>>(
+            payload,
+            webJsonSerializerOptions
+        );
+
+        deserialised.Should().NotBeNull();
+        deserialised.ResourceId.Should().Be(reference);
     }
 
     private Task InvokeProcessMessageAsync(Message message, CancellationToken cancellationToken)
