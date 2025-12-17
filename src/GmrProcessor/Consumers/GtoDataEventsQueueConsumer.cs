@@ -31,9 +31,22 @@ public sealed class GtoDataEventsQueueConsumer(
         switch (message.GetResourceType())
         {
             case ResourceEventResourceTypes.ImportPreNotification:
-                var importPreNotification = json.Deserialize<ResourceEvent<ImportPreNotification>>()!;
+                var importPreNotification = DeserializeAsync<ResourceEvent<ImportPreNotification>>(json)!;
                 await importPreNotificationProcessor.ProcessAsync(importPreNotification, stoppingToken);
                 break;
+        }
+    }
+
+    private T? DeserializeAsync<T>(JsonElement json)
+    {
+        try
+        {
+            return json.Deserialize<T>();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogDebug(ex, "Failed to deserialise JSON to {Type}: {Json}", typeof(T).FullName, json.GetRawText());
+            throw new JsonException($"Failed to deserialise JSON to {typeof(T).FullName}.", ex);
         }
     }
 }
