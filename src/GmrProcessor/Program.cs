@@ -68,6 +68,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddDataApiHttpClient();
 
+    builder.Services.AddOptions<CdpOptions>().Bind(builder.Configuration);
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
     builder.Services.AddValidateOptions<EtaMatchedGmrsQueueOptions>(EtaMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(
