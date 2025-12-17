@@ -18,6 +18,7 @@ public sealed class GtoDataEventsQueueConsumer(
     IGtoImportPreNotificationProcessor importPreNotificationProcessor
 ) : SqsConsumer<GtoDataEventsQueueConsumer>(logger, sqsClient, options.Value.QueueName)
 {
+    private static readonly JsonSerializerOptions s_defaultSerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly ILogger<GtoDataEventsQueueConsumer> _logger = logger;
 
     protected override int WaitTimeSeconds { get; } = options.Value.WaitTimeSeconds;
@@ -41,7 +42,7 @@ public sealed class GtoDataEventsQueueConsumer(
     {
         try
         {
-            return json.Deserialize<T>();
+            return json.Deserialize<T>(s_defaultSerializerOptions);
         }
         catch (JsonException ex)
         {
