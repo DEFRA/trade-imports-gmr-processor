@@ -1,99 +1,82 @@
-# trade-imports-gmr-processor
+# Trade Imports GMR Processor
 
-Core delivery C# ASP.NET backend template.
+The GMR Processor consumes Matched GMRs from the Finder and data events from the Trade Data API and then performs the following:
 
-* [Install MongoDB](#install-mongodb)
-* [Inspect MongoDB](#inspect-mongodb)
-* [Testing](#testing)
-* [Running](#running)
-* [Dependabot](#dependabot)
+- `GTO` - Places or removes holds on GMRs via GVMS depending on the InspectionRequired ImportPreNotification status
+- `ETA` - Provides an updated time of arrival to Ipaffs when a GMR is marked as Embarked
+- `ImportMatchedGmrs` - Provides an indication to Ipaffs that a CHED reference was matched with a GMR from GVMS
 
+The solution includes:
 
-### Docker Compose
+- `src/GmrProcessor` – The GMR Processor service
+- `tests/GmrProcessor.Tests` – Unit tests
+- `tests/GmrProcessor.IntegrationTests` – Integration tests
+- `tests/TestFixtures` – Shared fixture payloads for tests
+- `compose` / `compose.yml` – The service and related service dependencies to run via Docker
 
-A Docker Compose template is in [compose.yml](compose.yml).
+## Quick Start
 
-A local environment with:
+1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/) and Docker.
+2. Copy `.env.example` to `.env` and fill in the secrets.
+3. Run the full stack:
+   ```bash
+   docker compose up --build -d
+   ```
+4. Run tests:
+   ```bash
+   dotnet test
+   ```
 
-- Localstack for AWS services (S3, SQS)
-- Redis
-- MongoDB
-- This service.
-- A commented out frontend example.
+## Local Development
 
-```bash
-docker compose up --build -d
-```
+### Run dependencies + API locally
 
-A more extensive setup is available in [github.com/DEFRA/cdp-local-environment](https://github.com/DEFRA/cdp-local-environment)
-
-### MongoDB
-
-#### MongoDB via Docker
-
-See above.
-
-```
-docker compose up -d mongodb
-```
-
-#### MongoDB locally
-
-Alternatively install MongoDB locally:
-
-- Install [MongoDB](https://www.mongodb.com/docs/manual/tutorial/#installation) on your local machine
-- Start MongoDB:
-```bash
-sudo mongod --dbpath ~/mongodb-cdp
-```
-
-#### MongoDB in CDP environments
-
-In CDP environments a MongoDB instance is already set up
-and the credentials exposed as enviromment variables.
-
-
-### Inspect MongoDB
-
-To inspect the Database and Collections locally:
-```bash
-mongosh
-```
-
-You can use the CDP Terminal to access the environments' MongoDB.
-
-### Testing
-
-Run the tests with:
-
-Tests run by running a full `WebApplication` backed by [Ephemeral MongoDB](https://github.com/asimmon/ephemeral-mongo).
-Tests do not use mocking of any sort and read and write from the in-memory database.
+Start supporting services:
 
 ```bash
-dotnet test
-````
-
-### Running
-
-Run CDP-Deployments application:
-```bash
-dotnet run --project TradeImportsGmrProcessor --launch-profile Development
+docker compose up localstack mongodb asb wiremock
 ```
 
-### SonarCloud
-
-Example SonarCloud configuration are available in the GitHub Action workflows.
-
-### Dependabot
-
-We have added an example dependabot configuration file to the repository. You can enable it by renaming
-the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
+Run the API via Docker (`docker compose up gmr-processor`) or via your IDE using the launchSettings.json provided as a
+base environment configuration, adding the relevant environment variables from `.env`.
 
 
-### About the licence
+## Configuration
 
-The Open Government Licence (OGL) was developed by the Controller of Her Majesty's Stationery Office (HMSO) to enable
-information providers in the public sector to license the use and re-use of their information under a common open
-licence.
+Configuration is provided via `appsettings*.json` and overridden by environment variables. Key settings:
 
-It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.
+| Environment Variable                                 | Purpose                                                 |
+|------------------------------------------------------|---------------------------------------------------------|
+| `Mongo__DatabaseUri`                                 | Mongo connection string                                 |
+| `Mongo__DatabaseName`                                | Mongo database name                                     |
+| `EtaMatchedGmrsQueueConsumer__QueueName`             | SQS queue containing Matched GMRs for ETA               |
+| `GtoDataEventsQueueConsumer__QueueName`              | SQS queue containing Data API Events for GTO            |
+| `GtoMatchedGmrsQueueConsumer__QueueName`             | SQS queue containing Matched GMRs for GTO               |
+| `ImportMatchedGmrsQueueConsumer__QueueName`          | SQS queue containing Matched GMRs for ImportMatchedGMRs |
+| `GvmsApi__BaseUri`                                   | GVMS API base URL                                       |
+| `GvmsApi__ClientId`                                  | GVMS API Authentication Client ID                       |
+| `GvmsApi__ClientSecret`                              | GVMS API Authentication Client Secret                   |
+| `DataApi__BaseAddress`                               | Trade Imports Data API base URL                         |
+| `DataApi__Username` / `DataApi__Password`            | Basic auth for Data API                                 |
+| `TradeImportsServiceBus__ConnectionString`           | Azure Service Bus connection string                     |
+| `TradeImportsServiceBus__EtaQueueName`               | Service Bus queue for ETA updates                       |
+| `TradeImportsServiceBus__ImportMatchResultQueueName` | Service Bus queue for Import Match results              |
+
+## Testing
+
+- Unit tests: `dotnet test tests/GmrProcessor.Tests`
+- Integration tests: `dotnet test tests/GmrProcessor.IntegrationTests`
+
+## Linting & Formatting
+
+We use CSharpier. To run:
+
+```bash
+dotnet tool restore
+dotnet csharpier format .
+```
+
+## License
+
+The Open Government Licence (OGL) permits reuse of public-sector information with minimal conditions. See `LICENSE` for
+full text.
