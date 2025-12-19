@@ -7,6 +7,7 @@ using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using GmrProcessor.Config;
+using GmrProcessor.Services;
 using GmrProcessor.Utils.Http;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Http.Resilience;
@@ -18,6 +19,31 @@ namespace GmrProcessor.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddTradeImportsMessaging(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var featureOptions = new FeatureOptions();
+        configuration.Bind(featureOptions);
+
+        if (featureOptions.EnableTradeImportsMessaging)
+        {
+            var serviceBusOptions = configuration
+                .GetRequiredSection(TradeImportsServiceBusOptions.SectionName)
+                .Get<TradeImportsServiceBusOptions>()!;
+
+            services.AddTradeImportsServiceBus(serviceBusOptions);
+            services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
+        }
+        else
+        {
+            services.AddSingleton<ITradeImportsServiceBus, StubTradeImportsServiceBus>();
+        }
+
+        return services;
+    }
+
     public static IServiceCollection AddTradeImportsServiceBus(
         this IServiceCollection services,
         TradeImportsServiceBusOptions tradeImportsServiceBusOptions

@@ -1,6 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Azure.Messaging.ServiceBus;
-using Defra.TradeImportsDataApi.Api.Client;
 using FluentValidation;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
@@ -15,8 +13,6 @@ using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
-using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Authentication.AWS;
 using Serilog;
@@ -65,7 +61,6 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         .Services.AddOptions<DataApiOptions>()
         .BindConfiguration(DataApiOptions.SectionName)
         .ValidateDataAnnotations();
-
     builder.Services.AddDataApiHttpClient();
 
     builder.Services.AddOptions<CdpOptions>().Bind(builder.Configuration);
@@ -87,11 +82,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
         }
     });
 
-    var serviceBusOptions = builder
-        .Configuration.GetRequiredSection(TradeImportsServiceBusOptions.SectionName)
-        .Get<TradeImportsServiceBusOptions>()!;
-
-    builder.Services.AddTradeImportsServiceBus(serviceBusOptions);
+    builder.Services.AddTradeImportsMessaging(builder.Configuration);
 
     MongoClientSettings.Extensions.AddAWSAuthentication();
     builder.Services.Configure<MongoConfig>(builder.Configuration.GetSection("Mongo"));
@@ -110,8 +101,6 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
-
-    builder.Services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
 
     builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();

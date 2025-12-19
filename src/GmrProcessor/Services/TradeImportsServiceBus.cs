@@ -24,16 +24,16 @@ public class TradeImportsServiceBus(IAzureClientFactory<ServiceBusSender> servic
             var json = JsonSerializer.Serialize(message);
             var serviceBusMessage = new ServiceBusMessage(json);
 
+            if (messageBatch.TryAddMessage(serviceBusMessage))
+                continue;
+
+            await sender.SendMessagesAsync(messageBatch, cancellationToken);
+            messageBatch.Dispose();
+            messageBatch = await sender.CreateMessageBatchAsync(cancellationToken);
+
             if (!messageBatch.TryAddMessage(serviceBusMessage))
             {
-                await sender.SendMessagesAsync(messageBatch, cancellationToken);
-                messageBatch.Dispose();
-                messageBatch = await sender.CreateMessageBatchAsync(cancellationToken);
-
-                if (!messageBatch.TryAddMessage(serviceBusMessage))
-                {
-                    throw new InvalidOperationException($"Message is too large to fit in a batch");
-                }
+                throw new InvalidOperationException("Message is too large to fit in a batch");
             }
         }
 
