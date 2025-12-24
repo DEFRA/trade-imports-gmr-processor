@@ -13,7 +13,8 @@ public class ImportMatchedGmrsProcessor(
     ITradeImportsDataApiClient api,
     IMongoContext mongoContext,
     ITradeImportsServiceBus tradeImportsServiceBus,
-    IOptions<TradeImportsServiceBusOptions> serviceBusOptions
+    IOptions<TradeImportsServiceBusOptions> serviceBusOptions,
+    ILogger<ImportMatchedGmrsProcessor> logger
 ) : IImportMatchedGmrsProcessor
 {
     public async Task<object> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
@@ -54,16 +55,25 @@ public class ImportMatchedGmrsProcessor(
             })
             .ToList<WriteModel<MatchedImportNotification>>();
 
-        if (bulkOperations.Count > 0)
+        if (bulkOperations.Count == 0)
         {
-            var messages = enumerable.Select(um => new ImportMatchMessage() { ImportReference = um, Match = true });
-            await tradeImportsServiceBus.SendMessagesAsync(
-                messages,
-                serviceBusOptions.Value.ImportMatchResultQueueName,
-                cancellationToken
-            );
-            await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
+            logger.LogInformation("Received matched GMR {GmrId}, but no updates to send", matchedGmr.Gmr.GmrId);
+            return new object();
         }
+
+        logger.LogInformation(
+            "Received matched GMR {GmrId}, updating Ipaffs with Mrns: {Mrns}",
+            matchedGmr.Gmr.GmrId,
+            string.Join(",", enumerable.ToList())
+        );
+
+        var messages = enumerable.Select(um => new ImportMatchMessage { ImportReference = um, Match = true });
+        await tradeImportsServiceBus.SendMessagesAsync(
+            messages,
+            serviceBusOptions.Value.ImportMatchResultQueueName,
+            cancellationToken
+        );
+        await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
 
         return new object();
     }

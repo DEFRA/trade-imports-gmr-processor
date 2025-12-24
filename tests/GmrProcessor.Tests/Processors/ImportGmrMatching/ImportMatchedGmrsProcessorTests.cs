@@ -5,6 +5,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.ImportGmrMatching;
 using GmrProcessor.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
@@ -39,7 +40,8 @@ public class ImportMatchedGmrsProcessorTests
                     EtaQueueName = "EtaQueueName",
                     ImportMatchResultQueueName = "ImportMatchResultQueueName",
                 }
-            )
+            ),
+            NullLogger<ImportMatchedGmrsProcessor>.Instance
         );
     }
 
