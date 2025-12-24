@@ -1,11 +1,17 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using GmrProcessor.Metrics;
 
 namespace GmrProcessor.Consumers;
 
-public abstract class SqsConsumer<TConsumer>(ILogger<TConsumer> logger, IAmazonSQS sqsClient, string queueName)
-    : BackgroundService
+public abstract class SqsConsumer<TConsumer>(
+    ILogger<TConsumer> logger,
+    ConsumerMetrics consumerMetrics,
+    IAmazonSQS sqsClient,
+    string queueName
+) : BackgroundService
     where TConsumer : class
 {
     [ExcludeFromCodeCoverage]
@@ -59,10 +65,14 @@ public abstract class SqsConsumer<TConsumer>(ILogger<TConsumer> logger, IAmazonS
 
     private async Task HandleMessage(string queueUrl, Message message, CancellationToken cancellationToken)
     {
+        var stopwatch = Stopwatch.StartNew();
+        var success = false;
+
         try
         {
             await ProcessMessageAsync(message, cancellationToken);
             await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, cancellationToken);
+            success = true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -71,6 +81,11 @@ public abstract class SqsConsumer<TConsumer>(ILogger<TConsumer> logger, IAmazonS
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to process message {MessageId} from {QueueName}", message.MessageId, queueName);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            consumerMetrics.RecordProcessDuration(queueName, success, stopwatch.Elapsed);
         }
     }
 

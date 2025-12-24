@@ -1,6 +1,8 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using GmrProcessor.Consumers;
+using GmrProcessor.Metrics;
+using GmrProcessor.Tests.Metrics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -233,7 +235,7 @@ public class SqsConsumerTests
         IAmazonSQS sqsClient,
         string queueName,
         Func<Message, CancellationToken, Task>? onProcessMessage = null
-    ) : SqsConsumer<TestConsumer>(logger, sqsClient, queueName)
+    ) : SqsConsumer<TestConsumer>(logger, new ConsumerMetrics(MockMeterFactory.Create()), sqsClient, queueName)
     {
         private readonly Func<Message, CancellationToken, Task> _onProcessMessage =
             onProcessMessage ?? ((_, _) => Task.CompletedTask);

@@ -5,7 +5,9 @@ using Amazon.SQS.Model;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
+using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Tests.Metrics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -25,6 +27,7 @@ public class GtoMatchedGmrsQueueConsumerTests
             .ReturnsAsync(GtoMatchedGmrProcessorResult.NoHoldChange);
         _consumer = new GtoMatchedGmrsQueueConsumer(
             NullLogger<GtoMatchedGmrsQueueConsumer>.Instance,
+            new ConsumerMetrics(MockMeterFactory.Create()),
             _processor.Object,
             Options.Create(new GtoMatchedGmrsQueueOptions { QueueName = "queue" }),
             new Mock<IAmazonSQS>().Object

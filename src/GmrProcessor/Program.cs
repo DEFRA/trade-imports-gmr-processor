@@ -5,6 +5,7 @@ using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
 using GmrProcessor.Extensions;
+using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Eta;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Processors.ImportGmrMatching;
@@ -107,6 +108,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
     builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
 
+    builder.Services.AddSingleton<ConsumerMetrics>();
+
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 }
@@ -117,6 +120,7 @@ static WebApplication SetupApplication(WebApplication app)
     app.UseHeaderPropagation();
     app.UseRouting();
     app.MapHealthChecks("/health");
+    app.UseEmfExporter(app.Environment.ApplicationName);
 
     return app;
 }

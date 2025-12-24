@@ -5,6 +5,7 @@ using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Extensions;
+using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Utils;
 using Microsoft.Extensions.Options;
@@ -13,10 +14,11 @@ namespace GmrProcessor.Consumers;
 
 public sealed class GtoDataEventsQueueConsumer(
     ILogger<GtoDataEventsQueueConsumer> logger,
+    ConsumerMetrics consumerMetrics,
     IAmazonSQS sqsClient,
     IOptions<GtoDataEventsQueueConsumerOptions> options,
     IGtoImportPreNotificationProcessor importPreNotificationProcessor
-) : SqsConsumer<GtoDataEventsQueueConsumer>(logger, sqsClient, options.Value.QueueName)
+) : SqsConsumer<GtoDataEventsQueueConsumer>(logger, consumerMetrics, sqsClient, options.Value.QueueName)
 {
     private static readonly JsonSerializerOptions s_defaultSerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly ILogger<GtoDataEventsQueueConsumer> _logger = logger;
