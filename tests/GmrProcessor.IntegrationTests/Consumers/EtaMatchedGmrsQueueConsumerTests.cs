@@ -10,7 +10,7 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
-[Collection("UsesWireMockAndServiceBusClient")]
+[Collection("IntegrationTest")]
 public class EtaMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
     : IntegrationTestBase,
         IClassFixture<WireMockClient>,
