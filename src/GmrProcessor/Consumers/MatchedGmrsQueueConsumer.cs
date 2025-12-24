@@ -3,6 +3,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Extensions;
+using GmrProcessor.Metrics;
 using GmrProcessor.Processors;
 using GmrProcessor.Utils;
 
@@ -10,11 +11,12 @@ namespace GmrProcessor.Consumers;
 
 public abstract class MatchedGmrsQueueConsumer<TConsumer, T>(
     ILogger<TConsumer> logger,
+    ConsumerMetrics consumerMetrics,
     IMatchedGmrProcessor<T> processor,
     IAmazonSQS sqsClient,
     string queueName,
     int waitTimeSeconds = 20
-) : SqsConsumer<TConsumer>(logger, sqsClient, queueName)
+) : SqsConsumer<TConsumer>(logger, consumerMetrics, sqsClient, queueName)
     where TConsumer : class
 {
     private readonly ILogger<TConsumer> _logger = logger;

@@ -7,7 +7,9 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Extensions;
+using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Tests.Metrics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -24,6 +26,7 @@ public class GtoDataEventsQueueConsumerTests
     {
         _consumer = new GtoDataEventsQueueConsumer(
             NullLogger<GtoDataEventsQueueConsumer>.Instance,
+            new ConsumerMetrics(MockMeterFactory.Create()),
             new Mock<IAmazonSQS>().Object,
             Options.Create(
                 new GtoDataEventsQueueConsumerOptions
