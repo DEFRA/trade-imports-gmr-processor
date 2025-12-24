@@ -51,7 +51,19 @@ public static class ServiceCollectionExtensions
     {
         services.AddAzureClients(azureBuilder =>
         {
-            azureBuilder.AddServiceBusClient(tradeImportsServiceBusOptions.ConnectionString);
+            var serviceBusClientBuilder = azureBuilder.AddServiceBusClient(
+                tradeImportsServiceBusOptions.ConnectionString
+            );
+            serviceBusClientBuilder.ConfigureOptions(
+                (options, provider) =>
+                {
+                    if (!provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+                        return;
+
+                    options.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                    options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                }
+            );
 
             string[] queueNames =
             [
@@ -62,15 +74,7 @@ public static class ServiceCollectionExtensions
             {
                 azureBuilder
                     .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                        (options, _, provider) =>
-                        {
-                            options.TransportType = ServiceBusTransportType.AmqpWebSockets;
-                            if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
-                            {
-                                options.WebProxy = provider.GetRequiredService<IWebProxy>();
-                            }
-                            return provider.GetRequiredService<ServiceBusClient>().CreateSender(queueName)!;
-                        }
+                        (_, _, provider) => provider.GetRequiredService<ServiceBusClient>().CreateSender(queueName)!
                     )
                     .WithName(queueName);
             }
