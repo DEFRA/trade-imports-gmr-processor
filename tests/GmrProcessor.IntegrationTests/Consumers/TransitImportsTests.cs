@@ -7,6 +7,7 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
+[Collection("IntegrationTest")]
 public class TransitImportsTests : IntegrationTestBase
 {
     [Fact]

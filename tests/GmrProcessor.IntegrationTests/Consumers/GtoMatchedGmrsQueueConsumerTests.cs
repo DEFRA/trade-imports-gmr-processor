@@ -12,6 +12,7 @@ using TestFixtures;
 
 namespace GmrProcessor.IntegrationTests.Consumers;
 
+[Collection("IntegrationTest")]
 public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
 {
     [Fact]
