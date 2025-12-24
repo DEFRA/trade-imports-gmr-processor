@@ -58,7 +58,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_EMF_ENVIRONMENT: Local
-      AWS_EMF_NAMESPACE: GmrFinder
+      AWS_EMF_NAMESPACE: GmrProcessor
       SQS_ENDPOINT: http://localstack:4566
       USE_LOCALSTACK: true
 
