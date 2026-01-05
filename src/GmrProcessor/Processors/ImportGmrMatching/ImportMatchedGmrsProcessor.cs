@@ -28,6 +28,12 @@ public class ImportMatchedGmrsProcessor(
 
         List<string> relatedImports = [.. getImportsTask.Result, .. getTransitsTask.Result];
 
+        if (relatedImports.Count == 0)
+        {
+            logger.LogInformation("Skipping {Mrn} because no related imports have been found", matchedGmr.Mrn);
+            return new object();
+        }
+
         var previouslyMatched = await mongoContext.MatchedImportNotifications.FindMany<MatchedImportNotification>(
             match => relatedImports.Contains(match.Id),
             cancellationToken
@@ -36,6 +42,7 @@ public class ImportMatchedGmrsProcessor(
         var unmatched = relatedImports.Except(previouslyMatched.Select(m => m.Id));
 
         var enumerable = unmatched as string[] ?? unmatched.ToArray();
+
         var bulkOperations = enumerable
             .Select(um =>
             {

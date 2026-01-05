@@ -140,6 +140,63 @@ public class ImportMatchedGmrsProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenNoRelatedImports_LogsAndSkips()
+    {
+        var mrn = CustomsDeclarationFixtures.GenerateMrn();
+        var matchedGmr = new MatchedGmr { Mrn = mrn, Gmr = GmrFixtures.GmrFixture().Create() };
+
+        _mockApiClient
+            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ImportPreNotificationsResponse([]));
+        _mockImportTransitsCollection
+            .Setup(x =>
+                x.FindMany<ImportTransit>(
+                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([]);
+        _mockMatchedImportNotificationsCollection
+            .Setup(x =>
+                x.FindMany<MatchedImportNotification>(
+                    It.IsAny<Expression<Func<MatchedImportNotification, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([]);
+
+        await _processor.Process(matchedGmr, CancellationToken.None);
+
+        _mockServiceBusSenderService.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<ImportMatchMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        _mockMatchedImportNotificationsCollection.Verify(
+            x => x.BulkWrite(It.IsAny<List<WriteModel<MatchedImportNotification>>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString() == $"Skipping {matchedGmr.Mrn} because no related imports have been found"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
     public async Task Process_WhenPreviouslyMatchedGmrExist_NoNewMatchesAreCreated()
     {
         var mrn = CustomsDeclarationFixtures.GenerateMrn();
