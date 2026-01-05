@@ -19,7 +19,7 @@ public class GtoMatchedGmrProcessor(
         var importTransit = await gtoImportTransitRepository.GetByMrn(matchedGmr.Mrn!, cancellationToken);
         if (importTransit is null)
         {
-            logger.LogInformation("No import transit found for Mrn: {Mrn}, skipping", matchedGmr.Mrn);
+            logger.LogInformation("Skipping {Mrn} because no import transit was found", matchedGmr.Mrn);
             return GtoMatchedGmrProcessorResult.SkippedNoTransit;
         }
 
@@ -27,9 +27,9 @@ public class GtoMatchedGmrProcessor(
         if (gtoGmr.UpdatedDateTime != matchedGmr.Gmr.GetUpdatedDateTime())
         {
             logger.LogInformation(
-                "Skipping an old GTO GMR item, Gmr: {GmrId}, Mrn: {Mrn}, UpdatedTime: {UpdatedTime}",
-                matchedGmr.Gmr.GmrId,
+                "Skipping {Mrn} because it is an old GTO GMR item, Gmr: {GmrId}, UpdatedTime: {UpdatedTime}",
                 matchedGmr.Mrn,
+                matchedGmr.Gmr.GmrId,
                 matchedGmr.Gmr.UpdatedDateTime
             );
             return GtoMatchedGmrProcessorResult.SkippedOldGmr;
@@ -50,7 +50,7 @@ public class GtoMatchedGmrProcessor(
 
         if (gtoGmr.HoldStatus)
         {
-            logger.LogInformation("GMR {GmrId} is already on hold", matchedGmr.Gmr.GmrId);
+            logger.LogInformation("Matched GMR {GmrId} is already on hold, no action was taken", matchedGmr.Gmr.GmrId);
             return GtoMatchedGmrProcessorResult.NoHoldChange;
         }
 

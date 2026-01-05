@@ -5,7 +5,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.ImportGmrMatching;
 using GmrProcessor.Services;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Moq;
@@ -21,6 +21,7 @@ public class ImportMatchedGmrsProcessorTests
         new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransitsCollection = new();
     private readonly Mock<ITradeImportsServiceBus> _mockServiceBusSenderService = new();
+    private readonly Mock<ILogger<ImportMatchedGmrsProcessor>> _logger = new();
     private readonly ImportMatchedGmrsProcessor _processor;
 
     public ImportMatchedGmrsProcessorTests()
@@ -41,7 +42,7 @@ public class ImportMatchedGmrsProcessorTests
                     ImportMatchResultQueueName = "ImportMatchResultQueueName",
                 }
             ),
-            NullLogger<ImportMatchedGmrsProcessor>.Instance
+            _logger.Object
         );
     }
 
@@ -183,6 +184,125 @@ public class ImportMatchedGmrsProcessorTests
         _mockMatchedImportNotificationsCollection.Verify(
             x => x.BulkWrite(It.IsAny<List<WriteModel<MatchedImportNotification>>>(), It.IsAny<CancellationToken>()),
             Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenPreviouslyMatchedGmrExist_LogsNoUpdatesMessage()
+    {
+        var mrn = CustomsDeclarationFixtures.GenerateMrn();
+        var matchedGmr = new MatchedGmr { Mrn = mrn, Gmr = GmrFixtures.GmrFixture().Create() };
+
+        _mockApiClient
+            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ImportPreNotificationsResponse([]));
+
+        var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
+        _mockImportTransitsCollection
+            .Setup(x =>
+                x.FindMany<ImportTransit>(
+                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([
+                new ImportTransit
+                {
+                    Id = transitId,
+                    Mrn = mrn,
+                    TransitOverrideRequired = false,
+                },
+            ]);
+
+        _mockMatchedImportNotificationsCollection
+            .Setup(x =>
+                x.FindMany<MatchedImportNotification>(
+                    It.IsAny<Expression<Func<MatchedImportNotification, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([new MatchedImportNotification { Id = transitId, Mrn = mrn }]);
+
+        await _processor.Process(matchedGmr, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString() == $"Received matched GMR {matchedGmr.Gmr.GmrId}, but no updates to send"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenUnmatchedImportsExist_LogsUpdatingIpaffsMessage()
+    {
+        var mrn = CustomsDeclarationFixtures.GenerateMrn();
+        var matchedGmr = new MatchedGmr { Mrn = mrn, Gmr = GmrFixtures.GmrFixture().Create() };
+
+        var importRef = ImportPreNotificationFixtures.GenerateRandomReference();
+        var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
+
+        _mockApiClient
+            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new ImportPreNotificationsResponse([
+                    ImportPreNotificationFixtures
+                        .ImportPreNotificationResponseFixture(
+                            ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).Create()
+                        )
+                        .Create(),
+                ])
+            );
+
+        _mockImportTransitsCollection
+            .Setup(x =>
+                x.FindMany<ImportTransit>(
+                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([
+                new ImportTransit
+                {
+                    Id = transitId,
+                    Mrn = mrn,
+                    TransitOverrideRequired = false,
+                },
+            ]);
+
+        _mockMatchedImportNotificationsCollection
+            .Setup(x =>
+                x.FindMany<MatchedImportNotification>(
+                    It.IsAny<Expression<Func<MatchedImportNotification, bool>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([]);
+
+        await _processor.Process(matchedGmr, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString()
+                            == $"Received matched GMR {matchedGmr.Gmr.GmrId}, updating Ipaffs with Mrns: {importRef},{transitId}"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
         );
     }
 }

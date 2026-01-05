@@ -30,7 +30,7 @@ public class EtaMatchedGmrProcessor(
         if (!IsEmbarked(matchedGmr))
         {
             logger.LogInformation(
-                "GMR {GmrId} status {Status} is not {StateEmbarked}, skipping",
+                "Skipping GMR {GmrId} because status {Status} is not {StateEmbarked}",
                 matchedGmr.Gmr.GmrId,
                 matchedGmr.Gmr.State,
                 StateEmbarked
@@ -62,7 +62,7 @@ public class EtaMatchedGmrProcessor(
 
         if (chedMrns.Count == 0)
         {
-            logger.LogInformation("No CHEDs found for GMR {GmrId}, skipping", matchedGmr.Gmr.GmrId);
+            logger.LogInformation("Skipping GMR {GmrId} because no CHEDs were found", matchedGmr.Gmr.GmrId);
             return EtaMatchedGmrProcessorResult.NoChedsFound;
         }
 
