@@ -67,6 +67,30 @@ public class EtaMatchedGmrProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenGmrNotEmbarked_LogsSkippedNotEmbarkedMessage()
+    {
+        var matched = BuildMatchedGmr(state: "OPEN");
+
+        await _processor.Process(matched, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString()
+                            == $"Skipping GMR {matched.Gmr.GmrId} because status {matched.Gmr.State} is not EMBARKED"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
     public async Task Process_WhenIncomingCheckedInTimeIsOlder_ReturnsSkippedOldGmr()
     {
         var newGmrCheckedInCrossing = DateTimeOffset.UtcNow;
@@ -107,6 +131,40 @@ public class EtaMatchedGmrProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenCheckedInTimeUnchanged_LogsSkippingOldGmrMessage()
+    {
+        var matched = BuildMatchedGmr();
+        var existingEtaGmr = new EtaGmr
+        {
+            Id = matched.Gmr.GmrId,
+            Gmr = matched.Gmr,
+            UpdatedDateTime = matched.Gmr.GetUpdatedDateTime(),
+        };
+
+        _etaGmrCollection
+            .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingEtaGmr);
+
+        await _processor.Process(matched, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString()
+                            == $"Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {matched.Gmr.GmrId}, Mrn: {matched.Mrn}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
     public async Task Process_WhenCheckedInTimeUnchanged_ReturnsSkippedOldGmr()
     {
         var matched = BuildMatchedGmr();
@@ -134,6 +192,38 @@ public class EtaMatchedGmrProcessorTests
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenEmbarked_LogsProcessingEtaMessage()
+    {
+        var matched = BuildMatchedGmr();
+
+        _etaGmrCollection
+            .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EtaGmr?)null);
+        _tradeImportsDataApi
+            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ImportPreNotificationsResponse([]));
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        await _processor.Process(matched, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) => state.ToString() == $"Processing ETA for GMR {matched.Gmr.GmrId}"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
         );
     }
 
@@ -173,6 +263,49 @@ public class EtaMatchedGmrProcessorTests
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenNoChedsAssociatedWithGmrFound_LogsNoChedsMessage()
+    {
+        var matched = BuildMatchedGmr();
+        var existingGmr = BuildOlderMatchedGmr();
+
+        var updatedDateTime = matched.Gmr.GetUpdatedDateTime();
+        _etaGmrCollection
+            .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new EtaGmr
+                {
+                    Id = existingGmr.Gmr.GmrId,
+                    Gmr = existingGmr.Gmr,
+                    UpdatedDateTime = updatedDateTime,
+                }
+            );
+
+        _tradeImportsDataApi
+            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ImportPreNotificationsResponse([]));
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        await _processor.Process(matched, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString() == $"Skipping GMR {matched.Gmr.GmrId} because no CHEDs were found"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
         );
     }
 
@@ -218,6 +351,61 @@ public class EtaMatchedGmrProcessorTests
                     It.Is<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(m => m.Count() == 1),
                     "EtaQueueName",
                     It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenChedsFound_LogsInformingIpaffsMessage()
+    {
+        var matched = BuildMatchedGmr();
+        var existingGmr = BuildOlderMatchedGmr();
+        var importRef = ImportPreNotificationFixtures.GenerateRandomReference();
+        var expectedChed = $"ChedMrn {{ ChedReference = {importRef}, Mrn = {matched.Mrn} }}";
+
+        _etaGmrCollection
+            .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new EtaGmr
+                {
+                    Id = existingGmr.Gmr.GmrId,
+                    Gmr = existingGmr.Gmr,
+                    UpdatedDateTime = existingGmr.Gmr.GetUpdatedDateTime(),
+                }
+            );
+
+        var apiResponse = new ImportPreNotificationsResponse([
+            ImportPreNotificationFixtures
+                .ImportPreNotificationResponseFixture(
+                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).WithMrn(matched.Mrn!).Create()
+                )
+                .Create(),
+        ]);
+
+        _tradeImportsDataApi
+            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(apiResponse);
+
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        await _processor.Process(matched, CancellationToken.None);
+
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) =>
+                            state.ToString()
+                            == $"Informing Ipaffs of update to arrival time for CHEDs {expectedChed} for GMR"
+                                + $" {matched.Gmr.GmrId} with ETA {matched.Gmr.CheckedInCrossing!.LocalDateTimeOfArrival}"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
                 ),
             Times.Once
         );
