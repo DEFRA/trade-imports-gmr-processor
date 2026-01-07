@@ -11,7 +11,7 @@ public class GvmsApiClientService(
 {
     public async Task PlaceOrReleaseHold(string gmrId, bool holdStatus, CancellationToken cancellationToken)
     {
-        logger.LogInformation("{Action} hold on {GmrId}", holdStatus ? "Placing" : "Releasing", gmrId);
+        logger.LogInformation("{Action} GVMS hold on {GmrId}", holdStatus ? "Placing" : "Releasing", gmrId);
 
         await gvmsApiClient.HoldGmr(gmrId, holdStatus, cancellationToken);
 
