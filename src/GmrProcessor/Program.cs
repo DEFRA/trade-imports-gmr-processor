@@ -4,6 +4,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
+using GmrProcessor.Endpoints;
 using GmrProcessor.Extensions;
 using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Eta;
@@ -14,6 +15,7 @@ using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
 using GmrProcessor.Utils.Logging;
 using GmrProcessor.Utils.Mongo;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Authentication.AWS;
 using Serilog;
@@ -66,6 +68,8 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddOptions<CdpOptions>().Bind(builder.Configuration);
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
+    builder.Services.AddOptions<FeatureOptions>().Bind(builder.Configuration);
+
     builder.Services.AddValidateOptions<EtaMatchedGmrsQueueOptions>(EtaMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(
         GtoDataEventsQueueConsumerOptions.SectionName
@@ -120,6 +124,9 @@ static WebApplication SetupApplication(WebApplication app)
     app.UseHeaderPropagation();
     app.UseRouting();
     app.MapHealthChecks("/health");
+    var featureOptions = app.Services.GetRequiredService<IOptions<FeatureOptions>>().Value;
+    if (featureOptions.EnableDevEndpoints)
+        app.MapEtaEndpoints();
     app.UseEmfExporter(app.Environment.ApplicationName);
 
     return app;
