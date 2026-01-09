@@ -18,7 +18,7 @@ public static class EtaRouteBuilderExtensions
         CancellationToken cancellationToken
     )
     {
-        var result = await etaGmrCollection.FindOne(
+        var results = await etaGmrCollection.FindMany<EtaGmr>(
             f =>
                 f.Gmr.Declarations != null
                 && f.Gmr.Declarations.Customs != null
@@ -26,6 +26,6 @@ public static class EtaRouteBuilderExtensions
             cancellationToken
         );
 
-        return result is not null ? Results.Ok(result) : Results.NotFound();
+        return Results.Ok(results);
     }
 }

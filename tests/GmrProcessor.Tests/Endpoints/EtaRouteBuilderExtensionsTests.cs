@@ -14,48 +14,49 @@ public class EtaRouteBuilderExtensionsTests
     private readonly Mock<IEtaGmrCollection> _etaGmrCollection = new();
 
     [Fact]
-    public async Task GetEtaByMrn_WhenRecordWithMrnExists_ReturnsMatchedGmr()
+    public async Task GetEtaByMrn_WhenRecordsWithMrnExist_ReturnsMatchedGmrs()
     {
         const string mrn = "MRN123";
         var matched = BuildEtaGmrWithCustoms(mrn, "MRN999");
-        var nonMatched = BuildEtaGmrWithCustoms("MRN000");
-
-        Expression<Func<EtaGmr, bool>>? capturedPredicate = null;
+        var matchedSecond = BuildEtaGmrWithCustoms(mrn, "MRN777");
 
         _etaGmrCollection
-            .Setup(c => c.FindOne(It.IsAny<Expression<Func<EtaGmr, bool>>>(), It.IsAny<CancellationToken>()))
-            .Callback((Expression<Func<EtaGmr, bool>> predicate, CancellationToken _) => capturedPredicate = predicate)
-            .ReturnsAsync(
-                (Expression<Func<EtaGmr, bool>> predicate, CancellationToken _) =>
-                    predicate.Compile()(matched) ? matched : null
-            );
+            .Setup(c =>
+                c.FindMany(
+                    It.IsAny<Expression<Func<EtaGmr, bool>>>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Expression<Func<EtaGmr, EtaGmr>>?>(),
+                    It.IsAny<int?>()
+                )
+            )
+            .ReturnsAsync([matched, matchedSecond]);
 
         var result = await EtaRouteBuilderExtensions.GetEtaByMrn(_etaGmrCollection.Object, mrn, CancellationToken.None);
 
-        capturedPredicate.Should().NotBeNull();
-        capturedPredicate!.Compile()(matched).Should().BeTrue();
-        capturedPredicate.Compile()(nonMatched).Should().BeFalse();
-
-        var okResult = result.Should().BeOfType<Ok<EtaGmr>>().Subject;
-        okResult.Value.Should().Be(matched);
+        var okResult = result.Should().BeOfType<Ok<List<EtaGmr>>>().Subject;
+        okResult.Value.Should().BeEquivalentTo([matched, matchedSecond]);
     }
 
     [Fact]
-    public async Task GetEtaByMrn_WhenNoMatchingRecord_ReturnsNotFound()
+    public async Task GetEtaByMrn_WhenNoMatchingRecord_ReturnsEmptyList()
     {
         const string mrn = "MRN123";
-        var nonMatched = BuildEtaGmrWithCustoms("MRN000");
 
         _etaGmrCollection
-            .Setup(c => c.FindOne(It.IsAny<Expression<Func<EtaGmr, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-                (Expression<Func<EtaGmr, bool>> predicate, CancellationToken _) =>
-                    predicate.Compile()(nonMatched) ? nonMatched : null
-            );
+            .Setup(c =>
+                c.FindMany(
+                    It.IsAny<Expression<Func<EtaGmr, bool>>>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Expression<Func<EtaGmr, EtaGmr>>?>(),
+                    It.IsAny<int?>()
+                )
+            )
+            .ReturnsAsync([]);
 
         var result = await EtaRouteBuilderExtensions.GetEtaByMrn(_etaGmrCollection.Object, mrn, CancellationToken.None);
 
-        result.Should().BeOfType<NotFound>();
+        var okResult = result.Should().BeOfType<Ok<List<EtaGmr>>>().Subject;
+        okResult.Value.Should().BeEmpty();
     }
 
     private static EtaGmr BuildEtaGmrWithCustoms(params string[] mrns)
