@@ -10,4 +10,5 @@ public interface IMongoContext
     IEtaGmrCollection EtaGmr { get; }
     IMongoCollectionSet<ImportTransit> ImportTransits { get; }
     IMongoCollectionSet<MatchedImportNotification> MatchedImportNotifications { get; }
+    IMongoCollectionSet<MessageAudit> MessageAudits { get; }
 }

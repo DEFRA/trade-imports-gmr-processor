@@ -15,6 +15,7 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
     {
         logger.LogInformation("Updating Mongo indexes");
         await InitGtoMatchedGmrItemCollection(cancellationToken);
+        await InitMessageAuditCollection(cancellationToken);
     }
 
     private async Task InitGtoMatchedGmrItemCollection(CancellationToken cancellationToken)
@@ -28,6 +29,41 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
                     Background = false,
                     Unique = true,
                 }
+            ),
+            cancellationToken
+        );
+    }
+
+    private async Task InitMessageAuditCollection(CancellationToken cancellationToken)
+    {
+        await WithCollectionName<MessageAudit>("MessageAudit")(
+            new CreateIndexModel<MessageAudit>(
+                Builders<MessageAudit>.IndexKeys.Ascending(x => x.Timestamp),
+                new CreateIndexOptions
+                {
+                    Name = "Timestamp_TTL",
+                    Background = true,
+                    ExpireAfter = TimeSpan.FromDays(1),
+                }
+            ),
+            cancellationToken
+        );
+
+        await WithCollectionName<MessageAudit>("MessageAudit")(
+            new CreateIndexModel<MessageAudit>(
+                Builders<MessageAudit>
+                    .IndexKeys.Ascending(x => x.Timestamp)
+                    .Ascending(x => x.Direction)
+                    .Ascending(x => x.IntegrationType),
+                new CreateIndexOptions { Name = "Timestamp_Direction_IntegrationType", Background = true }
+            ),
+            cancellationToken
+        );
+
+        await WithCollectionName<MessageAudit>("MessageAudit")(
+            new CreateIndexModel<MessageAudit>(
+                Builders<MessageAudit>.IndexKeys.Ascending(x => x.Target),
+                new CreateIndexOptions { Name = "Target_Index", Background = true }
             ),
             cancellationToken
         );

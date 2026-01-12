@@ -34,7 +34,23 @@ public static class ServiceCollectionExtensions
                 .Get<TradeImportsServiceBusOptions>()!;
 
             services.AddTradeImportsServiceBus(serviceBusOptions);
-            services.AddSingleton<ITradeImportsServiceBus, TradeImportsServiceBus>();
+
+            services.AddSingleton<TradeImportsServiceBus>();
+
+            if (featureOptions.EnableStoreOutboundMessages)
+            {
+                services.AddSingleton<ITradeImportsServiceBus>(sp =>
+                {
+                    var innerService = sp.GetRequiredService<TradeImportsServiceBus>();
+                    var mongoContext = sp.GetRequiredService<Data.IMongoContext>();
+                    var logger = sp.GetRequiredService<ILogger<TradeImportsServiceBusWithStorage>>();
+                    return new TradeImportsServiceBusWithStorage(innerService, mongoContext, logger);
+                });
+            }
+            else
+            {
+                services.AddSingleton<ITradeImportsServiceBus>(sp => sp.GetRequiredService<TradeImportsServiceBus>());
+            }
         }
         else
         {
