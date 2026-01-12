@@ -98,7 +98,23 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddSingleton<IGtoImportTransitRepository, GtoImportTransitRepository>();
     builder.Services.AddSingleton<IGtoMatchedGmrRepository, GtoMatchedGmrRepository>();
-    builder.Services.AddSingleton<IGvmsApiClientService, GvmsApiClientService>();
+
+    builder.Services.AddSingleton<GvmsApiClientService>();
+    if (builder.Configuration.GetValue<bool>("ENABLE_STORE_OUTBOUND_MESSAGES"))
+    {
+        builder.Services.AddSingleton<IGvmsApiClientService>(sp =>
+        {
+            var innerService = sp.GetRequiredService<GvmsApiClientService>();
+            var mongoContext = sp.GetRequiredService<IMongoContext>();
+            var logger = sp.GetRequiredService<ILogger<GvmsApiClientServiceWithStorage>>();
+            return new GvmsApiClientServiceWithStorage(innerService, mongoContext, logger);
+        });
+    }
+    else
+    {
+        builder.Services.AddSingleton<IGvmsApiClientService>(sp => sp.GetRequiredService<GvmsApiClientService>());
+    }
+
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
