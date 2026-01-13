@@ -12,8 +12,18 @@ public class GvmsApiClientServiceWithStorage(
 {
     public async Task PlaceOrReleaseHold(string gmrId, bool holdStatus, CancellationToken cancellationToken)
     {
-        await gvmsApiClient.PlaceOrReleaseHold(gmrId, holdStatus, cancellationToken);
+        try
+        {
+            await gvmsApiClient.PlaceOrReleaseHold(gmrId, holdStatus, cancellationToken);
+        }
+        finally
+        {
+            await StoreMessage(gmrId, holdStatus, cancellationToken);
+        }
+    }
 
+    private async Task StoreMessage(string gmrId, bool holdStatus, CancellationToken cancellationToken)
+    {
         try
         {
             var messageAudit = new MessageAudit
