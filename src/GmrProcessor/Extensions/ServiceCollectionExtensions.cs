@@ -7,6 +7,7 @@ using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using GmrProcessor.Config;
+using GmrProcessor.Metrics;
 using GmrProcessor.Services;
 using GmrProcessor.Utils.Http;
 using Microsoft.Extensions.Azure;
@@ -41,10 +42,10 @@ public static class ServiceCollectionExtensions
             {
                 services.AddSingleton<ITradeImportsServiceBus>(sp =>
                 {
-                    var innerService = sp.GetRequiredService<TradeImportsServiceBus>();
+                    var tradeImportsServiceBus = sp.GetRequiredService<TradeImportsServiceBus>();
                     var mongoContext = sp.GetRequiredService<Data.IMongoContext>();
                     var logger = sp.GetRequiredService<ILogger<TradeImportsServiceBusWithStorage>>();
-                    return new TradeImportsServiceBusWithStorage(innerService, mongoContext, logger);
+                    return new TradeImportsServiceBusWithStorage(tradeImportsServiceBus, mongoContext, logger);
                 });
             }
             else
@@ -98,6 +99,37 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddGvmsApiClientService(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var featureOptions = new FeatureOptions();
+        configuration.Bind(featureOptions);
+
+        services.AddSingleton<GvmsApiClientService>();
+        services.AddSingleton<GvmsApiMetrics>();
+
+        services.AddSingleton<IGvmsApiClientService>(sp =>
+        {
+            IGvmsApiClientService service = sp.GetRequiredService<GvmsApiClientService>();
+
+            var metrics = sp.GetRequiredService<GvmsApiMetrics>();
+            service = new GvmsApiClientServiceWithMetrics(service, metrics);
+
+            if (!featureOptions.EnableStoreOutboundMessages)
+                return service;
+
+            var mongoContext = sp.GetRequiredService<Data.IMongoContext>();
+            var storageLogger = sp.GetRequiredService<ILogger<GvmsApiClientServiceWithStorage>>();
+            service = new GvmsApiClientServiceWithStorage(service, mongoContext, storageLogger);
+
+            return service;
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddDataApiHttpClient(this IServiceCollection services)
     {
         var resilienceOptions = new HttpStandardResilienceOptions { Retry = { UseJitter = true } };
@@ -115,7 +147,6 @@ public static class ServiceCollectionExtensions
                     c.Timeout = Timeout.InfiniteTimeSpan;
                 }
             )
-            //.AddHeaderPropagation()
             .AddResilienceHandler(
                 "DataApi",
                 builder =>

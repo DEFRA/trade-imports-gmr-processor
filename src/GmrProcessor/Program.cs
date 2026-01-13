@@ -25,7 +25,6 @@ using IGtoImportPreNotificationProcessor = GmrProcessor.Processors.Gto.IGtoImpor
 
 var app = CreateWebApplication(args);
 
-// Ensure the database indices are initialized before starting the application.
 using (var scope = app.Services.CreateScope())
 {
     var initializer = scope.ServiceProvider.GetRequiredService<MongoDbInitializer>();
@@ -104,21 +103,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoImportTransitRepository, GtoImportTransitRepository>();
     builder.Services.AddSingleton<IGtoMatchedGmrRepository, GtoMatchedGmrRepository>();
 
-    builder.Services.AddSingleton<GvmsApiClientService>();
-    if (builder.Configuration.GetValue<bool>("ENABLE_STORE_OUTBOUND_MESSAGES"))
-    {
-        builder.Services.AddSingleton<IGvmsApiClientService>(sp =>
-        {
-            var innerService = sp.GetRequiredService<GvmsApiClientService>();
-            var mongoContext = sp.GetRequiredService<IMongoContext>();
-            var logger = sp.GetRequiredService<ILogger<GvmsApiClientServiceWithStorage>>();
-            return new GvmsApiClientServiceWithStorage(innerService, mongoContext, logger);
-        });
-    }
-    else
-    {
-        builder.Services.AddSingleton<IGvmsApiClientService>(sp => sp.GetRequiredService<GvmsApiClientService>());
-    }
+    builder.Services.AddGvmsApiClientService(builder.Configuration);
 
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
