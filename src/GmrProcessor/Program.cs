@@ -66,6 +66,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddOptions<CdpOptions>().Bind(builder.Configuration);
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
+    builder.Services.AddOptions<FeatureOptions>().Bind(builder.Configuration);
     builder.Services.AddValidateOptions<EtaMatchedGmrsQueueOptions>(EtaMatchedGmrsQueueOptions.SectionName);
     builder.Services.AddValidateOptions<GtoDataEventsQueueConsumerOptions>(
         GtoDataEventsQueueConsumerOptions.SectionName
@@ -119,10 +120,14 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
 
-    builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
-    builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
-    builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
-    builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
+    var featureOptions = builder.Configuration.Get<FeatureOptions>() ?? new FeatureOptions();
+    if (featureOptions.EnableSqsConsumers)
+    {
+        builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
+        builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
+        builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
+        builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
+    }
 
     builder.Services.AddSingleton<ConsumerMetrics>();
 
@@ -137,6 +142,12 @@ static WebApplication SetupApplication(WebApplication app)
     app.UseRouting();
     app.MapHealthChecks("/health");
     app.UseEmfExporter(app.Environment.ApplicationName);
+
+    var featureOptions = app.Configuration.Get<FeatureOptions>() ?? new FeatureOptions();
+    if (!featureOptions.EnableSqsConsumers)
+    {
+        Log.Warning("SQS consumers are disabled");
+    }
 
     return app;
 }
