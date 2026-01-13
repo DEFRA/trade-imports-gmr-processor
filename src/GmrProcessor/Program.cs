@@ -124,10 +124,14 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
 
-    builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
-    builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
-    builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
-    builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
+    var featureOptions = builder.Configuration.Get<FeatureOptions>() ?? new FeatureOptions();
+    if (featureOptions.EnableSqsConsumers)
+    {
+        builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
+        builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
+        builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
+        builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
+    }
 
     builder.Services.AddSingleton<ConsumerMetrics>();
 
@@ -150,6 +154,11 @@ static WebApplication SetupApplication(WebApplication app)
     }
 
     app.UseEmfExporter(app.Environment.ApplicationName);
+
+    if (!featureOptions.EnableSqsConsumers)
+    {
+        Log.Warning("SQS consumers are disabled");
+    }
 
     return app;
 }

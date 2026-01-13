@@ -62,6 +62,14 @@ Configuration is provided via `appsettings*.json` and overridden by environment 
 | `TradeImportsServiceBus__EtaQueueName`               | Service Bus queue for ETA updates                       |
 | `TradeImportsServiceBus__ImportMatchResultQueueName` | Service Bus queue for Import Match results              |
 
+## Feature Flags
+
+| Variable                         | Purpose                                                  |
+|----------------------------------|----------------------------------------------------------|
+| `ENABLE_SQS_CONSUMERS`           | Enables or disables the SQS queue consumers              |
+| `ENABLE_TRADE_IMPORTS_MESSAGING` | Enables or disables Azure Service Bus messaging          |
+| `ENABLE_STORE_OUTBOUND_MESSAGES` | Enables or disables storing outbound messages to MongoDB |
+
 ## Testing
 
 - Unit tests: `dotnet test tests/GmrProcessor.Tests`
