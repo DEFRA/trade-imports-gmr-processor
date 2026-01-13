@@ -108,6 +108,26 @@ public class GvmsApiClientServiceWithStorageTests
     }
 
     [Fact]
+    public async Task PlaceOrReleaseHold_OnApiFailure_StillStoresMessage()
+    {
+        var gmrId = GmrFixtures.GenerateGmrId();
+        const bool holdStatus = true;
+
+        _gvmsApiClient
+            .Setup(s => s.PlaceOrReleaseHold(gmrId, holdStatus, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("API failure"));
+
+        await Assert.ThrowsAsync<Exception>(async () =>
+            await _service.PlaceOrReleaseHold(gmrId, holdStatus, CancellationToken.None)
+        );
+
+        _messageAudits.Verify(
+            m => m.BulkWrite(It.IsAny<List<WriteModel<MessageAudit>>>(), CancellationToken.None),
+            Times.Once
+        );
+    }
+
+    [Fact]
     public async Task PlaceOrReleaseHold_DoesNotThrowOnStorageFailure()
     {
         var gmrId = GmrFixtures.GenerateGmrId();
