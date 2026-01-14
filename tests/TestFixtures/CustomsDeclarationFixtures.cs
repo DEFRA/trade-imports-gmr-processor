@@ -14,12 +14,13 @@ public static class CustomsDeclarationFixtures
     {
         NoGmrs = 0,
         NotFinalisable = 1,
-        CheckedIn = 2,
-        Embarked = 3,
-        Completed = 4,
-        CheckedInInspectionRequired = 5,
-        EmbarkedInspectionRequired = 6,
-        NotFinalisableAndCheckedIn = 7,
+        Open = 2,
+        CheckedIn = 3,
+        Embarked = 4,
+        Completed = 5,
+        CheckedInInspectionRequired = 6,
+        EmbarkedInspectionRequired = 7,
+        NotFinalisableAndCheckedIn = 8,
     }
 
     public static string GenerateMrn(MrnStatus mrnStatus = MrnStatus.Embarked)
