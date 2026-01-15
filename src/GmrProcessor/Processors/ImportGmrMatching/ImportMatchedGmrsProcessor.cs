@@ -17,7 +17,10 @@ public class ImportMatchedGmrsProcessor(
     ILogger<ImportMatchedGmrsProcessor> logger
 ) : IImportMatchedGmrsProcessor
 {
-    public async Task<object> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
+    public async Task<ImportMatchedGmrsProcessorResult> Process(
+        MatchedGmr matchedGmr,
+        CancellationToken cancellationToken
+    )
     {
         var matchMrn = matchedGmr.Mrn!;
 
@@ -31,7 +34,7 @@ public class ImportMatchedGmrsProcessor(
         if (relatedImports.Count == 0)
         {
             logger.LogInformation("Skipping {Mrn} because no related imports have been found", matchedGmr.Mrn);
-            return new object();
+            return ImportMatchedGmrsProcessorResult.NoRelatedImportsFound;
         }
 
         var previouslyMatched = await mongoContext.MatchedImportNotifications.FindMany<MatchedImportNotification>(
@@ -65,7 +68,7 @@ public class ImportMatchedGmrsProcessor(
         if (bulkOperations.Count == 0)
         {
             logger.LogInformation("Received matched GMR {GmrId}, but no updates to send", matchedGmr.Gmr.GmrId);
-            return new object();
+            return ImportMatchedGmrsProcessorResult.NoUpdatesFound;
         }
 
         logger.LogInformation(
@@ -82,7 +85,7 @@ public class ImportMatchedGmrsProcessor(
         );
         await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
 
-        return new object();
+        return ImportMatchedGmrsProcessorResult.UpdatedIpaffs;
     }
 
     private async Task<string[]> GetTransitByMrn(string mrn, CancellationToken cancellationToken)

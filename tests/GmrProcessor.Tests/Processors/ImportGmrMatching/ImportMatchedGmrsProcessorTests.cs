@@ -111,7 +111,9 @@ public class ImportMatchedGmrsProcessorTests
             )
             .Callback<List<WriteModel<MatchedImportNotification>>, CancellationToken>((ops, _) => capturedOps = ops);
 
-        await _processor.Process(matchedGmr, CancellationToken.None);
+        var result = await _processor.Process(matchedGmr, CancellationToken.None);
+
+        result.Should().Be(ImportMatchedGmrsProcessorResult.UpdatedIpaffs);
 
         Assert.NotNull(capturedOps);
         Assert.Equal(3, capturedOps.Count);
@@ -165,7 +167,8 @@ public class ImportMatchedGmrsProcessorTests
             )
             .ReturnsAsync([]);
 
-        await _processor.Process(matchedGmr, CancellationToken.None);
+        var result = await _processor.Process(matchedGmr, CancellationToken.None);
+        result.Should().Be(ImportMatchedGmrsProcessorResult.NoRelatedImportsFound);
 
         _mockServiceBusSenderService.Verify(
             s =>
@@ -236,7 +239,8 @@ public class ImportMatchedGmrsProcessorTests
             )
             .ReturnsAsync([previousMatch]);
 
-        await _processor.Process(matchedGmr, CancellationToken.None);
+        var result = await _processor.Process(matchedGmr, CancellationToken.None);
+        result.Should().Be(ImportMatchedGmrsProcessorResult.NoUpdatesFound);
 
         _mockMatchedImportNotificationsCollection.Verify(
             x => x.BulkWrite(It.IsAny<List<WriteModel<MatchedImportNotification>>>(), It.IsAny<CancellationToken>()),
@@ -280,7 +284,8 @@ public class ImportMatchedGmrsProcessorTests
             )
             .ReturnsAsync([new MatchedImportNotification { Id = transitId, Mrn = mrn }]);
 
-        await _processor.Process(matchedGmr, CancellationToken.None);
+        var result = await _processor.Process(matchedGmr, CancellationToken.None);
+        result.Should().Be(ImportMatchedGmrsProcessorResult.NoUpdatesFound);
 
         _logger.Verify(
             l =>
@@ -344,7 +349,8 @@ public class ImportMatchedGmrsProcessorTests
             )
             .ReturnsAsync([]);
 
-        await _processor.Process(matchedGmr, CancellationToken.None);
+        var result = await _processor.Process(matchedGmr, CancellationToken.None);
+        result.Should().Be(ImportMatchedGmrsProcessorResult.UpdatedIpaffs);
 
         _logger.Verify(
             l =>
