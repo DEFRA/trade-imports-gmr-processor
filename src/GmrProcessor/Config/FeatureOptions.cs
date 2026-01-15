@@ -19,4 +19,7 @@ public class FeatureOptions
 
     [ConfigurationKeyName("ENABLE_SQS_CONSUMERS")]
     public bool EnableSqsConsumers { get; init; } = false;
+
+    [ConfigurationKeyName("ENABLE_GVMS_API_CLIENT_HOLD")]
+    public bool EnableGvmsApiClientHold { get; init; } = false;
 }
