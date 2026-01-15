@@ -61,6 +61,12 @@ public class GvmsHoldService(
             gmrId
         );
 
+        if (!_features.EnableGvmsApiClientHold)
+        {
+            logger.LogInformation("GVMS API client is disabled, skipping API call for {GmrId}", gmrId);
+            return GvmsHoldResult.NoHoldChange;
+        }
+
         try
         {
             await metrics.RecordRequest(

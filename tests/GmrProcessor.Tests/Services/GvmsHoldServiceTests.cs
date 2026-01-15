@@ -31,7 +31,9 @@ public class GvmsHoldServiceTests
     {
         _mongoContext.Setup(m => m.GtoGmr).Returns(_gtoGmrCollection.Object);
         _mongoContext.Setup(m => m.MessageAudits).Returns(_messageAudits.Object);
-        _featureOptions.Setup(f => f.Value).Returns(new FeatureOptions { EnableStoreOutboundMessages = false });
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(new FeatureOptions { EnableStoreOutboundMessages = false, EnableGvmsApiClientHold = true });
         _metrics
             .Setup(m => m.RecordRequest(It.IsAny<string>(), It.IsAny<Task>()))
             .Returns<string, Task>((_, task) => task);
@@ -419,7 +421,9 @@ public class GvmsHoldServiceTests
 
         _featureOptions
             .Setup(f => f.Value)
-            .Returns(new FeatureOptions { EnableStoreOutboundMessages = featureEnabled });
+            .Returns(
+                new FeatureOptions { EnableStoreOutboundMessages = featureEnabled, EnableGvmsApiClientHold = true }
+            );
         _gtoGmrCollection
             .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);
@@ -465,7 +469,9 @@ public class GvmsHoldServiceTests
         };
         InsertOneModel<MessageAudit>? capturedModel = null;
 
-        _featureOptions.Setup(f => f.Value).Returns(new FeatureOptions { EnableStoreOutboundMessages = true });
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(new FeatureOptions { EnableStoreOutboundMessages = true, EnableGvmsApiClientHold = true });
         _gtoGmrCollection
             .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);
@@ -524,7 +530,9 @@ public class GvmsHoldServiceTests
             TransitOverrideRequired = true,
         };
 
-        _featureOptions.Setup(f => f.Value).Returns(new FeatureOptions { EnableStoreOutboundMessages = true });
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(new FeatureOptions { EnableStoreOutboundMessages = true, EnableGvmsApiClientHold = true });
         _gtoGmrCollection
             .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);
@@ -573,7 +581,9 @@ public class GvmsHoldServiceTests
             TransitOverrideRequired = true,
         };
 
-        _featureOptions.Setup(f => f.Value).Returns(new FeatureOptions { EnableStoreOutboundMessages = true });
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(new FeatureOptions { EnableStoreOutboundMessages = true, EnableGvmsApiClientHold = true });
         _gtoGmrCollection
             .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);
@@ -594,5 +604,61 @@ public class GvmsHoldServiceTests
 
         _gvmsApiClient.Verify(c => c.HoldGmr(gmrId, true, CancellationToken.None), Times.Once);
         _gtoGmrCollection.Verify(c => c.UpdateHoldStatus(gmrId, true, CancellationToken.None), Times.Once);
+    }
+
+    [Fact]
+    public async Task PlaceOrReleaseHold_WhenFeatureFlagDisabled_SkipsApiCallAndReturnsNoHoldChange()
+    {
+        var gmrId = GmrFixtures.GenerateGmrId();
+        var mrns = new List<string> { "mrn1" };
+        var gmr = GmrFixtures.GmrFixture().With(g => g.GmrId, gmrId).Create();
+        var gtoGmr = new GtoGmr
+        {
+            Id = gmrId,
+            Gmr = gmr,
+            HoldStatus = false,
+            UpdatedDateTime = DateTime.UtcNow,
+        };
+        var importTransit = new ImportTransit
+        {
+            Id = "id1",
+            Mrn = "mrn1",
+            TransitOverrideRequired = true,
+        };
+
+        _featureOptions.Setup(f => f.Value).Returns(new FeatureOptions { EnableGvmsApiClientHold = false });
+        _gtoGmrCollection
+            .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(gtoGmr);
+        _matchedGmrRepository.Setup(r => r.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>())).ReturnsAsync(mrns);
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(mrns, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
+
+        var service = CreateService();
+        var result = await service.PlaceOrReleaseHold(gmrId, CancellationToken.None);
+
+        result.Should().Be(GvmsHoldResult.NoHoldChange);
+        _gvmsApiClient.Verify(
+            c => c.HoldGmr(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        _gtoGmrCollection.Verify(
+            c => c.UpdateHoldStatus(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        _logger.Verify(
+            l =>
+                l.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>(
+                        (state, _) => state.ToString() == $"GVMS API client is disabled, skipping API call for {gmrId}"
+                    ),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                ),
+            Times.Once
+        );
     }
 }
