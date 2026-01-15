@@ -1,8 +1,6 @@
-using GmrProcessor.Data;
+namespace GmrProcessor.Data.Gto;
 
-namespace GmrProcessor.Processors.Gto;
-
-public interface IGtoImportTransitRepository
+public interface IGtoImportTransitCollection
 {
     Task<ImportTransit?> GetByMrn(string mrn, CancellationToken cancellationToken);
     Task<List<ImportTransit>> GetByMrns(List<string> mrns, CancellationToken cancellationToken);

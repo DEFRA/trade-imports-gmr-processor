@@ -5,6 +5,7 @@ using Defra.TradeImportsGmrFinder.Domain.Events;
 using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
 using GmrProcessor.Config;
 using GmrProcessor.Data.Eta;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Gto;
@@ -15,7 +16,7 @@ namespace GmrProcessor.Processors.Eta;
 
 public class EtaMatchedGmrProcessor(
     ILogger<EtaMatchedGmrProcessor> logger,
-    IGtoImportTransitRepository importTransitRepository,
+    IGtoImportTransitCollection importTransitCollection,
     ITradeImportsDataApiClient tradeImportsDataApi,
     IEtaGmrCollection etaGmrCollection,
     ITradeImportsServiceBus tradeImportsServiceBus,
@@ -121,7 +122,7 @@ public class EtaMatchedGmrProcessor(
 
     private async Task<List<ChedMrn>> GetTransitByMrn(string mrn, CancellationToken cancellationToken)
     {
-        return (await importTransitRepository.GetByMrns([mrn], cancellationToken))
+        return (await importTransitCollection.GetByMrns([mrn], cancellationToken))
             .Select(it => new ChedMrn { ChedReference = it.Id, Mrn = it.Mrn! })
             .ToList();
     }

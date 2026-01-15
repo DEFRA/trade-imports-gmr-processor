@@ -13,18 +13,18 @@ using TestFixtures;
 
 namespace GmrProcessor.Tests.Processors.Gto;
 
-public class GtoMatchedGmrRepositoryTests
+public class GtoMatchedGmrCollectionTests
 {
     private readonly Mock<IMongoContext> _mongo = new();
     private readonly Mock<IMongoCollectionSet<MatchedGmrItem>> _matchedItems = new();
     private readonly Mock<IGtoGmrCollection> _gtoGmr = new();
-    private readonly GtoMatchedGmrRepository _repo;
+    private readonly GtoMatchedGmrCollection _repo;
 
-    public GtoMatchedGmrRepositoryTests()
+    public GtoMatchedGmrCollectionTests()
     {
         _mongo.Setup(m => m.GtoMatchedGmrItem).Returns(_matchedItems.Object);
         _mongo.Setup(m => m.GtoGmr).Returns(_gtoGmr.Object);
-        _repo = new GtoMatchedGmrRepository(_mongo.Object);
+        _repo = new GtoMatchedGmrCollection(_mongo.Object);
     }
 
     [Fact]
@@ -112,32 +112,6 @@ public class GtoMatchedGmrRepositoryTests
         var result = await _repo.GetRelatedMrns(gmrId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(new List<string> { mrn1, mrn2 });
-    }
-
-    [Fact]
-    public async Task UpsertGmr_CallsUpdateOrInsert()
-    {
-        var gmr = GmrFixtures.GmrFixture().Create();
-        var gtoGmr = new GtoGmr
-        {
-            Id = gmr.GmrId,
-            Gmr = gmr,
-            UpdatedDateTime = gmr.GetUpdatedDateTime(),
-        };
-        var persisted = new GtoGmr
-        {
-            Id = gmr.GmrId,
-            Gmr = gmr,
-            UpdatedDateTime = gmr.GetUpdatedDateTime(),
-            HoldStatus = true,
-        };
-
-        _gtoGmr.Setup(g => g.UpdateOrInsert(gtoGmr, It.IsAny<CancellationToken>())).ReturnsAsync(persisted);
-
-        var result = await _repo.UpsertGmr(gtoGmr, CancellationToken.None);
-
-        result.Should().BeSameAs(persisted);
-        _gtoGmr.Verify(g => g.UpdateOrInsert(gtoGmr, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

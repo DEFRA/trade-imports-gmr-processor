@@ -35,7 +35,7 @@ public sealed class GtoDataEventsQueueConsumer(
         {
             case ResourceEventResourceTypes.ImportPreNotification:
                 var importPreNotification = DeserializeAsync<ResourceEvent<ImportPreNotification>>(json)!;
-                await importPreNotificationProcessor.ProcessAsync(importPreNotification, stoppingToken);
+                await importPreNotificationProcessor.Process(importPreNotification, stoppingToken);
                 break;
         }
     }

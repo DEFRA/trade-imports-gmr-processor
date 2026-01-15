@@ -1,5 +1,6 @@
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,9 +14,8 @@ public class GtoImportPreNotificationProcessorTests
 {
     private readonly Mock<IMongoContext> _mockMongoContext = new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransits = new();
-    private readonly Mock<IGvmsApiClientService> _mockGvmsApiClientService = new();
-    private readonly Mock<IGtoMatchedGmrRepository> _mockGtoMatchedGmrRepository = new();
-    private readonly Mock<IGtoImportTransitRepository> _mockImportTransitRepository = new();
+    private readonly Mock<IGtoMatchedGmrCollection> _mockGtoMatchedGmrRepository = new();
+    private readonly Mock<IGvmsHoldService> _mockGvmsHoldService = new();
     private readonly GtoImportPreNotificationProcessor _processor;
 
     public GtoImportPreNotificationProcessorTests()
@@ -24,9 +24,8 @@ public class GtoImportPreNotificationProcessorTests
         _processor = new GtoImportPreNotificationProcessor(
             _mockMongoContext.Object,
             NullLogger<GtoImportPreNotificationProcessor>.Instance,
-            _mockGvmsApiClientService.Object,
             _mockGtoMatchedGmrRepository.Object,
-            _mockImportTransitRepository.Object
+            _mockGvmsHoldService.Object
         );
     }
 
@@ -45,7 +44,7 @@ public class GtoImportPreNotificationProcessorTests
             .ImportPreNotificationResourceEventFixture(importPreNotification)
             .Create();
 
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
+        await _processor.Process(resourceEvent, CancellationToken.None);
 
         _mockImportTransits.Verify(
             x =>
@@ -70,7 +69,7 @@ public class GtoImportPreNotificationProcessorTests
             .ImportPreNotificationResourceEventFixture(importPreNotification)
             .Create();
 
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
+        await _processor.Process(resourceEvent, CancellationToken.None);
 
         _mockImportTransits.Verify(
             x =>
@@ -85,82 +84,7 @@ public class GtoImportPreNotificationProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenOverrideChangesToRequired_PlacesHold()
-    {
-        const string importReference = "CHEDD.GB.2024.1234567";
-        const string mrn = "24GB12345678901234";
-        var gmrId = GmrFixtures.GenerateGmrId();
-
-        var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(importReference)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
-            .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
-            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
-            .With(x => x.Status, string.Empty)
-            .Create();
-        var resourceEvent = ImportPreNotificationFixtures
-            .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .Create();
-
-        _mockImportTransits
-            .Setup(x =>
-                x.FindOneAndUpdate(
-                    It.IsAny<FilterDefinition<ImportTransit>>(),
-                    It.IsAny<UpdateDefinition<ImportTransit>>(),
-                    It.IsAny<FindOneAndUpdateOptions<ImportTransit>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(
-                new ImportTransit
-                {
-                    Id = importReference,
-                    TransitOverrideRequired = false,
-                    Mrn = mrn,
-                }
-            );
-        _mockGtoMatchedGmrRepository
-            .Setup(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MatchedGmrItem { Mrn = mrn, GmrId = gmrId });
-        _mockGtoMatchedGmrRepository
-            .Setup(x => x.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([mrn]);
-        _mockImportTransitRepository
-            .Setup(x =>
-                x.GetByMrns(
-                    It.Is<List<string>>(l => l.SequenceEqual(new List<string> { mrn })),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = mrn,
-                    Mrn = mrn,
-                    TransitOverrideRequired = true,
-                },
-            ]);
-
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
-
-        _mockGtoMatchedGmrRepository.Verify(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()), Times.Once);
-        _mockGtoMatchedGmrRepository.Verify(x => x.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockImportTransitRepository.Verify(
-            x =>
-                x.GetByMrns(
-                    It.Is<List<string>>(l => l.SequenceEqual(new List<string> { mrn })),
-                    It.IsAny<CancellationToken>()
-                ),
-            Times.Once
-        );
-        _mockGvmsApiClientService.Verify(
-            x => x.PlaceOrReleaseHold(gmrId, true, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task ProcessAsync_WhenHoldChangeAndNoMatchedGmr_DoesNotCallGvms()
+    public async Task ProcessAsync_WhenHoldChange_DoesNotCallGvms()
     {
         const string resourceId = "CHEDD.GB.2024.1234567";
         const string mrn = "24GB12345678901234";
@@ -197,26 +121,27 @@ public class GtoImportPreNotificationProcessorTests
             .Setup(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()))
             .ReturnsAsync((MatchedGmrItem?)null);
 
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
+        await _processor.Process(resourceEvent, CancellationToken.None);
 
         _mockGtoMatchedGmrRepository.Verify(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()), Times.Once);
-        _mockGvmsApiClientService.Verify(
-            x => x.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+        _mockGvmsHoldService.Verify(
+            x => x.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenOverrideDoesNotChange_DoesNotChangeHoldStatus()
+    public async Task ProcessAsync_WhenMatchedGmrExists_PassesToGvmsHoldService()
     {
-        const string resourceId = "CHEDD.GB.2024.1234567";
+        const string importReference = "CHEDD.GB.2024.1234567";
         const string mrn = "24GB12345678901234";
+        var gmrId = GmrFixtures.GenerateGmrId();
 
         var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(resourceId)
+            .ImportPreNotificationFixture(importReference)
             .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
-            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "required" })
+            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)
             .Create();
         var resourceEvent = ImportPreNotificationFixtures
@@ -235,169 +160,18 @@ public class GtoImportPreNotificationProcessorTests
             .ReturnsAsync(
                 new ImportTransit
                 {
-                    Id = resourceId,
-                    TransitOverrideRequired = true,
-                    Mrn = mrn,
-                }
-            );
-
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
-
-        _mockGtoMatchedGmrRepository.Verify(
-            x => x.GetByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-        _mockGvmsApiClientService.Verify(
-            x => x.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-    }
-
-    [Fact]
-    public async Task ProcessAsync_WhenOverrideChangesToNotRequired_ReleasesHold()
-    {
-        const string resourceId = "CHEDD.GB.2024.1234567";
-        const string mrn = "24GB12345678901234";
-        var gmrId = GmrFixtures.GenerateGmrId();
-
-        var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(resourceId)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
-            .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
-            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Not Required" })
-            .With(x => x.Status, "validated")
-            .Create();
-        var resourceEvent = ImportPreNotificationFixtures
-            .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .Create();
-
-        _mockImportTransits
-            .Setup(x =>
-                x.FindOneAndUpdate(
-                    It.IsAny<FilterDefinition<ImportTransit>>(),
-                    It.IsAny<UpdateDefinition<ImportTransit>>(),
-                    It.IsAny<FindOneAndUpdateOptions<ImportTransit>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(
-                new ImportTransit
-                {
-                    Id = resourceId,
-                    TransitOverrideRequired = true,
+                    Id = importReference,
+                    TransitOverrideRequired = false,
                     Mrn = mrn,
                 }
             );
         _mockGtoMatchedGmrRepository
             .Setup(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MatchedGmrItem { Mrn = mrn, GmrId = gmrId });
-        _mockGtoMatchedGmrRepository
-            .Setup(x => x.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([mrn]);
-        _mockImportTransitRepository
-            .Setup(x =>
-                x.GetByMrns(
-                    It.Is<List<string>>(l => l.SequenceEqual(new List<string> { mrn })),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = mrn,
-                    Mrn = mrn,
-                    TransitOverrideRequired = false,
-                },
-            ]);
 
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
+        await _processor.Process(resourceEvent, CancellationToken.None);
 
         _mockGtoMatchedGmrRepository.Verify(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()), Times.Once);
-        _mockGtoMatchedGmrRepository.Verify(x => x.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockImportTransitRepository.Verify(
-            x =>
-                x.GetByMrns(
-                    It.Is<List<string>>(l => l.SequenceEqual(new List<string> { mrn })),
-                    It.IsAny<CancellationToken>()
-                ),
-            Times.Once
-        );
-        _mockGvmsApiClientService.Verify(
-            x => x.PlaceOrReleaseHold(gmrId, false, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task ProcessAsync_WhenOtherRelatedTransitStillRequiresOverride_KeepsHoldPlaced()
-    {
-        const string resourceId = "CHEDD.GB.2024.1234567";
-        const string mrn = "24GB12345678901234";
-        const string otherMrn = "24GB99999999999999";
-        var gmrId = GmrFixtures.GenerateGmrId();
-
-        var importPreNotification = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(resourceId)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
-            .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
-            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Not Required" })
-            .With(x => x.Status, "validated")
-            .Create();
-        var resourceEvent = ImportPreNotificationFixtures
-            .ImportPreNotificationResourceEventFixture(importPreNotification)
-            .With(r => r.ResourceId, resourceId)
-            .Create();
-
-        _mockImportTransits
-            .Setup(x =>
-                x.FindOneAndUpdate(
-                    It.IsAny<FilterDefinition<ImportTransit>>(),
-                    It.IsAny<UpdateDefinition<ImportTransit>>(),
-                    It.IsAny<FindOneAndUpdateOptions<ImportTransit>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(
-                new ImportTransit
-                {
-                    Id = resourceId,
-                    TransitOverrideRequired = true,
-                    Mrn = mrn,
-                }
-            );
-        _mockGtoMatchedGmrRepository
-            .Setup(x => x.GetByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MatchedGmrItem { Mrn = mrn, GmrId = gmrId });
-        _mockGtoMatchedGmrRepository
-            .Setup(x => x.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([mrn, otherMrn]);
-        _mockImportTransitRepository
-            .Setup(x =>
-                x.GetByMrns(
-                    It.Is<List<string>>(l => l.SequenceEqual(new List<string> { mrn, otherMrn })),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = mrn,
-                    Mrn = mrn,
-                    TransitOverrideRequired = false,
-                },
-                new ImportTransit
-                {
-                    Id = otherMrn,
-                    Mrn = otherMrn,
-                    TransitOverrideRequired = true,
-                },
-            ]);
-
-        await _processor.ProcessAsync(resourceEvent, CancellationToken.None);
-
-        _mockGvmsApiClientService.Verify(
-            x => x.PlaceOrReleaseHold(gmrId, true, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        _mockGvmsHoldService.Verify(x => x.PlaceOrReleaseHold(gmrId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

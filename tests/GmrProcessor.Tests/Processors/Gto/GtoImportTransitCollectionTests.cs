@@ -1,22 +1,23 @@
 using System.Linq.Expressions;
 using Defra.TradeImportsDataApi.Domain.Gvms;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Processors.Gto;
 using Moq;
 using TestFixtures;
 
 namespace GmrProcessor.Tests.Processors.Gto;
 
-public class GtoImportTransitRepositoryTests
+public class GtoImportTransitCollectionTests
 {
     private readonly Mock<IMongoContext> _mongo = new();
     private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransits = new();
-    private readonly GtoImportTransitRepository _repo;
+    private readonly GtoImportTransitCollection _repo;
 
-    public GtoImportTransitRepositoryTests()
+    public GtoImportTransitCollectionTests()
     {
         _mongo.Setup(m => m.ImportTransits).Returns(_mockImportTransits.Object);
-        _repo = new GtoImportTransitRepository(_mongo.Object);
+        _repo = new GtoImportTransitCollection(_mongo.Object);
     }
 
     [Fact]
