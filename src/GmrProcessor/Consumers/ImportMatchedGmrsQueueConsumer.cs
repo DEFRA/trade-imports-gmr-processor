@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Amazon.SQS;
 using GmrProcessor.Config;
 using GmrProcessor.Metrics;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace GmrProcessor.Consumers;
 
+[ExcludeFromCodeCoverage]
 public class ImportMatchedGmrsQueueConsumer(
     ILogger<ImportMatchedGmrsQueueConsumer> logger,
     ConsumerMetrics consumerMetrics,
@@ -14,7 +16,7 @@ public class ImportMatchedGmrsQueueConsumer(
     IOptions<ImportMatchedGmrsQueueOptions> options,
     IAmazonSQS sqsClient
 )
-    : MatchedGmrsQueueConsumer<ImportMatchedGmrsQueueConsumer, object>(
+    : MatchedGmrsQueueConsumer<ImportMatchedGmrsQueueConsumer, ImportMatchedGmrsProcessorResult>(
         logger,
         consumerMetrics,
         importMatchedGmrsProcessor,
