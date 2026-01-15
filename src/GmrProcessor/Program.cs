@@ -4,13 +4,13 @@ using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Endpoints;
 using GmrProcessor.Extensions;
 using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Eta;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Processors.ImportGmrMatching;
-using GmrProcessor.Security;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;
 using GmrProcessor.Utils.Http;
@@ -58,8 +58,6 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddHttpProxyClient();
 
-    builder.Services.AddGvmsApiClient();
-
     builder
         .Services.AddOptions<DataApiOptions>()
         .BindConfiguration(DataApiOptions.SectionName)
@@ -97,13 +95,16 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddSqsClient();
 
+    builder.Services.AddGvmsApiClient();
+    builder.Services.AddSingleton<IGvmsApiMetrics, GvmsApiMetrics>();
+    builder.Services.AddSingleton<IGvmsHoldService, GvmsHoldService>();
+
     builder.Services.AddSingleton<IEtaGmrCollection, EtaGmrCollection>();
     builder.Services.AddSingleton<IEtaMatchedGmrProcessor, EtaMatchedGmrProcessor>();
 
-    builder.Services.AddSingleton<IGtoImportTransitRepository, GtoImportTransitRepository>();
-    builder.Services.AddSingleton<IGtoMatchedGmrRepository, GtoMatchedGmrRepository>();
-
-    builder.Services.AddGvmsApiClientService(builder.Configuration);
+    builder.Services.AddSingleton<IGtoGmrCollection, GtoGmrCollection>();
+    builder.Services.AddSingleton<IGtoImportTransitCollection, GtoImportTransitCollection>();
+    builder.Services.AddSingleton<IGtoMatchedGmrCollection, GtoMatchedGmrCollection>();
 
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();

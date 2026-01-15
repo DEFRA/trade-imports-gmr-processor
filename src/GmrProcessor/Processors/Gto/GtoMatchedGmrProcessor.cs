@@ -1,6 +1,5 @@
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
-using GmrProcessor.Data;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Extensions;
 using GmrProcessor.Services;
@@ -9,21 +8,22 @@ namespace GmrProcessor.Processors.Gto;
 
 public class GtoMatchedGmrProcessor(
     ILogger<GtoMatchedGmrProcessor> logger,
-    IGtoMatchedGmrRepository matchedGmrRepository,
-    IGtoImportTransitRepository gtoImportTransitRepository,
-    IGvmsApiClientService gvmsApiClientService
+    IGtoMatchedGmrCollection matchedGmrCollection,
+    IGtoGmrCollection gtoGmrCollection,
+    IGtoImportTransitCollection gtoImportTransitCollection,
+    IGvmsHoldService gvmsHoldService
 ) : IGtoMatchedGmrProcessor
 {
     public async Task<GtoMatchedGmrProcessorResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
-        var importTransit = await gtoImportTransitRepository.GetByMrn(matchedGmr.Mrn!, cancellationToken);
+        var importTransit = await gtoImportTransitCollection.GetByMrn(matchedGmr.Mrn!, cancellationToken);
         if (importTransit is null)
         {
             logger.LogInformation("Skipping {Mrn} because no import transit was found", matchedGmr.Mrn);
             return GtoMatchedGmrProcessorResult.SkippedNoTransit;
         }
 
-        var gtoGmr = await matchedGmrRepository.UpsertGmr(BuildGtoGmr(matchedGmr.Gmr), cancellationToken);
+        var gtoGmr = await gtoGmrCollection.UpdateOrInsert(BuildGtoGmr(matchedGmr.Gmr), cancellationToken);
         if (gtoGmr.UpdatedDateTime != matchedGmr.Gmr.GetUpdatedDateTime())
         {
             logger.LogInformation(
@@ -42,28 +42,17 @@ public class GtoMatchedGmrProcessor(
             matchedGmr.Gmr.UpdatedDateTime
         );
 
-        await matchedGmrRepository.UpsertMatchedItem(matchedGmr, cancellationToken);
+        await matchedGmrCollection.UpsertMatchedItem(matchedGmr, cancellationToken);
 
-        var relatedMrns = await matchedGmrRepository.GetRelatedMrns(matchedGmr.Gmr.GmrId, cancellationToken);
-        var relatedImportTransits = await gtoImportTransitRepository.GetByMrns(relatedMrns, cancellationToken);
-        var anyImportTransitsRequireHold = ShouldHold(relatedImportTransits);
-
-        if (gtoGmr.HoldStatus)
+        var result = await gvmsHoldService.PlaceOrReleaseHold(matchedGmr.Gmr.GmrId, cancellationToken);
+        return result switch
         {
-            logger.LogInformation("Matched GMR {GmrId} is already on hold, no action was taken", matchedGmr.Gmr.GmrId);
-            return GtoMatchedGmrProcessorResult.NoHoldChange;
-        }
-
-        await gvmsApiClientService.PlaceOrReleaseHold(
-            matchedGmr.Gmr.GmrId,
-            anyImportTransitsRequireHold,
-            cancellationToken
-        );
-        return GtoMatchedGmrProcessorResult.HoldPlaced;
+            GvmsHoldResult.NoHoldChange => GtoMatchedGmrProcessorResult.NoHoldChange,
+            GvmsHoldResult.HoldPlaced => GtoMatchedGmrProcessorResult.HoldPlaced,
+            GvmsHoldResult.HoldReleased => GtoMatchedGmrProcessorResult.HoldReleased,
+            _ => throw new InvalidOperationException($"Unexpected GvmsHoldResult value: {result}"),
+        };
     }
-
-    private static bool ShouldHold(IEnumerable<ImportTransit> relatedImportTransits) =>
-        relatedImportTransits.Any(x => x.TransitOverrideRequired);
 
     private static GtoGmr BuildGtoGmr(Gmr gmr) =>
         new()

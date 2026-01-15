@@ -1,8 +1,6 @@
-using GmrProcessor.Data;
+namespace GmrProcessor.Data.Gto;
 
-namespace GmrProcessor.Processors.Gto;
-
-public class GtoImportTransitRepository(IMongoContext mongo) : IGtoImportTransitRepository
+public class GtoImportTransitCollection(IMongoContext mongo) : IGtoImportTransitCollection
 {
     public Task<ImportTransit?> GetByMrn(string mrn, CancellationToken cancellationToken) =>
         mongo.ImportTransits.FindOne(it => it.Mrn == mrn, cancellationToken);

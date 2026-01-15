@@ -71,7 +71,7 @@ public class GtoDataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.ProcessAsync(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -92,7 +92,7 @@ public class GtoDataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.ProcessAsync(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

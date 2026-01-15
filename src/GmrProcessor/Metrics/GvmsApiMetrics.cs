@@ -4,7 +4,7 @@ using Amazon.CloudWatch.EMF.Model;
 
 namespace GmrProcessor.Metrics;
 
-public class GvmsApiMetrics
+public class GvmsApiMetrics : IGvmsApiMetrics
 {
     private readonly Histogram<double> _requestDuration;
 
@@ -19,7 +19,7 @@ public class GvmsApiMetrics
         );
     }
 
-    public void RecordRequestDuration(string endpoint, bool success, TimeSpan duration, string? errorType = null)
+    private void RecordRequestDuration(string endpoint, bool success, TimeSpan duration, string? errorType = null)
     {
         var tagList = new TagList { { "endpoint", endpoint }, { "success", success } };
 
@@ -29,5 +29,28 @@ public class GvmsApiMetrics
         }
 
         _requestDuration.Record(duration.TotalMilliseconds, tagList);
+    }
+
+    public async Task RecordRequest(string endpoint, Task func)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var success = false;
+        string? errorType = null;
+
+        try
+        {
+            await func;
+            success = true;
+        }
+        catch (Exception ex)
+        {
+            errorType = ex.GetType().Name;
+            throw;
+        }
+        finally
+        {
+            stopwatch.Stop();
+            RecordRequestDuration(endpoint, success, stopwatch.Elapsed, errorType);
+        }
     }
 }

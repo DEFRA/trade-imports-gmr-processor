@@ -1,6 +1,7 @@
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;
 using MongoDB.Driver;
@@ -10,12 +11,11 @@ namespace GmrProcessor.Processors.Gto;
 public class GtoImportPreNotificationProcessor(
     IMongoContext mongoContext,
     ILogger<GtoImportPreNotificationProcessor> logger,
-    IGvmsApiClientService gvmsApiClientService,
-    IGtoMatchedGmrRepository matchedGmrRepository,
-    IGtoImportTransitRepository importTransitRepository
+    IGtoMatchedGmrCollection matchedGmrCollection,
+    IGvmsHoldService gvmsHoldService
 ) : IGtoImportPreNotificationProcessor
 {
-    public async Task ProcessAsync(
+    public async Task<GtoImportNotificationProcessorResult> Process(
         ResourceEvent<ImportPreNotification> importPreNotificationEvent,
         CancellationToken cancellationToken
     )
@@ -28,7 +28,7 @@ public class GtoImportPreNotificationProcessor(
         if (!importTransitResult.IsTransit)
         {
             logger.LogInformation("CHED {ChedId} is not a transit, skipping", reference);
-            return;
+            return GtoImportNotificationProcessorResult.SkippedNotATransit;
         }
 
         var transitOverride = TransitOverride.IsTransitOverrideRequired(importPreNotification);
@@ -44,40 +44,26 @@ public class GtoImportPreNotificationProcessor(
             ReturnDocument = ReturnDocument.Before,
         };
 
-        var originalTransitOverrideRecord = await mongoContext.ImportTransits.FindOneAndUpdate(
-            filter,
-            update,
-            options,
-            cancellationToken
-        );
+        await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);
 
         logger.LogInformation("Inserted or updated ImportTransit {Id}", reference);
 
-        if (
-            originalTransitOverrideRecord is not null
-            && transitOverride.IsOverrideRequired != originalTransitOverrideRecord.TransitOverrideRequired
-        )
-        {
-            await PlaceOrReleaseHold(importTransitResult.Mrn!, cancellationToken);
-            return;
-        }
+        var mrn = importTransitResult.Mrn!;
 
-        logger.LogInformation("No change in transit override status for {Id}", reference);
-    }
-
-    private async Task PlaceOrReleaseHold(string mrn, CancellationToken cancellationToken)
-    {
-        var matchedGmr = await matchedGmrRepository.GetByMrn(mrn, cancellationToken);
+        var matchedGmr = await matchedGmrCollection.GetByMrn(mrn, cancellationToken);
         if (matchedGmr is null)
         {
             logger.LogInformation("Tried to place or release hold on MRN {Mrn} but no MatchedGmr exists", mrn);
-            return;
+            return GtoImportNotificationProcessorResult.NoMatchedGmrExists;
         }
 
-        var relatedMrns = await matchedGmrRepository.GetRelatedMrns(matchedGmr.GmrId, cancellationToken);
-        var relatedImportTransits = await importTransitRepository.GetByMrns(relatedMrns, cancellationToken);
-        var holdStatus = relatedImportTransits.Any(x => x.TransitOverrideRequired);
-
-        await gvmsApiClientService.PlaceOrReleaseHold(matchedGmr.GmrId, holdStatus, cancellationToken);
+        var result = await gvmsHoldService.PlaceOrReleaseHold(matchedGmr.GmrId, cancellationToken);
+        return result switch
+        {
+            GvmsHoldResult.HoldPlaced => GtoImportNotificationProcessorResult.HoldPlaced,
+            GvmsHoldResult.HoldReleased => GtoImportNotificationProcessorResult.HoldReleased,
+            GvmsHoldResult.NoHoldChange => GtoImportNotificationProcessorResult.NoHoldChange,
+            _ => throw new InvalidOperationException($"Unexpected GvmsHoldResult value: {result}"),
+        };
     }
 }

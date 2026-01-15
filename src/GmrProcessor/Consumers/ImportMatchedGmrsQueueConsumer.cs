@@ -2,6 +2,7 @@ using Amazon.SQS;
 using GmrProcessor.Config;
 using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.ImportGmrMatching;
 using Microsoft.Extensions.Options;
 
 namespace GmrProcessor.Consumers;

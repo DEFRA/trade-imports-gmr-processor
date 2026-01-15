@@ -1,16 +1,11 @@
 using Defra.TradeImportsGmrFinder.Domain.Events;
-using GmrProcessor.Data;
-using GmrProcessor.Data.Gto;
 using GmrProcessor.Extensions;
 using MongoDB.Driver;
 
-namespace GmrProcessor.Processors.Gto;
+namespace GmrProcessor.Data.Gto;
 
-public class GtoMatchedGmrRepository(IMongoContext mongo) : IGtoMatchedGmrRepository
+public class GtoMatchedGmrCollection(IMongoContext mongo) : IGtoMatchedGmrCollection
 {
-    public Task<GtoGmr> UpsertGmr(GtoGmr gmr, CancellationToken cancellationToken) =>
-        mongo.GtoGmr.UpdateOrInsert(gmr, cancellationToken);
-
     public Task UpsertMatchedItem(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
         var filter = Builders<MatchedGmrItem>.Filter.Where(f =>

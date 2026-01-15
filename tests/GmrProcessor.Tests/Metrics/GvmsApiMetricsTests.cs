@@ -8,6 +8,7 @@ namespace GmrProcessor.Tests.Metrics;
 public class GvmsApiMetricsTests
 {
     private readonly GvmsApiMetrics _gvmsApiMetrics;
+    private readonly List<CollectedMeasurement<double>> _measurements = new();
 
     public GvmsApiMetricsTests()
     {
@@ -16,111 +17,98 @@ public class GvmsApiMetricsTests
         var serviceProvider = services.BuildServiceProvider();
         var meterFactory = serviceProvider.GetRequiredService<IMeterFactory>();
         _gvmsApiMetrics = new GvmsApiMetrics(meterFactory);
+
+        var meterListener = new MeterListener();
+        meterListener.InstrumentPublished = (instrument, listener) =>
+        {
+            if (
+                instrument.Meter.Name == MetricsConstants.MetricNames.MeterName
+                && instrument.Name == MetricsConstants.MetricNames.GvmsApiRequestDuration
+            )
+                listener.EnableMeasurementEvents(instrument);
+        };
+
+        meterListener.SetMeasurementEventCallback<double>(
+            (_, measurement, tags, _) =>
+            {
+                _measurements.Add(new CollectedMeasurement<double>(measurement, tags.ToArray()));
+            }
+        );
+
+        meterListener.Start();
     }
 
     [Fact]
-    public void RecordRequestDuration_ShouldRecordHistogramWithCorrectValue()
+    public async Task RecordRequest_ShouldRecordMetricsWithSuccess_WhenTaskCompletes()
     {
         const string endpoint = "Hold";
-        const bool success = true;
-        var duration = TimeSpan.FromMilliseconds(1234.5);
-        var measurements = new List<CollectedMeasurement<double>>();
+        var taskCompletionSource = new TaskCompletionSource();
 
-        using var meterListener = new MeterListener();
-        meterListener.InstrumentPublished = (instrument, listener) =>
-        {
-            if (
-                instrument.Meter.Name == MetricsConstants.MetricNames.MeterName
-                && instrument.Name == MetricsConstants.MetricNames.GvmsApiRequestDuration
-            )
-                listener.EnableMeasurementEvents(instrument);
-        };
+        var recordTask = _gvmsApiMetrics.RecordRequest(endpoint, taskCompletionSource.Task);
+        taskCompletionSource.SetResult();
+        await recordTask;
 
-        meterListener.SetMeasurementEventCallback<double>(
-            (_, measurement, tags, _) =>
-            {
-                measurements.Add(new CollectedMeasurement<double>(measurement, tags.ToArray()));
-            }
-        );
+        _measurements.Should().HaveCount(1);
+        _measurements[0].Value.Should().BeGreaterThan(0);
 
-        meterListener.Start();
-
-        _gvmsApiMetrics.RecordRequestDuration(endpoint, success, duration);
-
-        measurements.Should().HaveCount(1);
-        measurements[0].Value.Should().Be(1234.5);
+        var tags = _measurements[0].Tags;
+        tags.Should().Contain(new KeyValuePair<string, object?>("endpoint", "Hold"));
+        tags.Should().Contain(new KeyValuePair<string, object?>("success", true));
+        tags.Should().NotContain(tag => tag.Key == "errorType");
     }
 
     [Fact]
-    public void RecordRequestDuration_ShouldRecordWithCorrectTags_WhenSuccessful()
-    {
-        const string expectedEndpoint = "Hold";
-        const bool expectedSuccess = true;
-        var duration = TimeSpan.FromMilliseconds(100);
-        var measurements = new List<CollectedMeasurement<double>>();
-
-        using var meterListener = new MeterListener();
-        meterListener.InstrumentPublished = (instrument, listener) =>
-        {
-            if (
-                instrument.Meter.Name == MetricsConstants.MetricNames.MeterName
-                && instrument.Name == MetricsConstants.MetricNames.GvmsApiRequestDuration
-            )
-                listener.EnableMeasurementEvents(instrument);
-        };
-
-        meterListener.SetMeasurementEventCallback<double>(
-            (_, measurement, tags, _) =>
-            {
-                measurements.Add(new CollectedMeasurement<double>(measurement, tags.ToArray()));
-            }
-        );
-
-        meterListener.Start();
-
-        _gvmsApiMetrics.RecordRequestDuration(expectedEndpoint, expectedSuccess, duration);
-
-        measurements.Should().HaveCount(1);
-        var tags = measurements[0].Tags;
-        tags.Should().Contain(new KeyValuePair<string, object?>("endpoint", expectedEndpoint));
-        tags.Should().Contain(new KeyValuePair<string, object?>("success", expectedSuccess));
-    }
-
-    [Fact]
-    public void RecordRequestDuration_ShouldIncludeErrorType_WhenFailureWithErrorType()
+    public async Task RecordRequest_ShouldRecordMetricsWithFailure_WhenTaskThrows()
     {
         const string endpoint = "Hold";
-        const bool success = false;
-        const string errorType = "HttpRequestException";
-        var duration = TimeSpan.FromMilliseconds(100);
-        var measurements = new List<CollectedMeasurement<double>>();
+        var taskCompletionSource = new TaskCompletionSource();
+        var expectedException = new HttpRequestException("API failure");
 
-        using var meterListener = new MeterListener();
-        meterListener.InstrumentPublished = (instrument, listener) =>
-        {
-            if (
-                instrument.Meter.Name == MetricsConstants.MetricNames.MeterName
-                && instrument.Name == MetricsConstants.MetricNames.GvmsApiRequestDuration
-            )
-                listener.EnableMeasurementEvents(instrument);
-        };
+        var recordTask = _gvmsApiMetrics.RecordRequest(endpoint, taskCompletionSource.Task);
+        taskCompletionSource.SetException(expectedException);
 
-        meterListener.SetMeasurementEventCallback<double>(
-            (_, measurement, tags, _) =>
-            {
-                measurements.Add(new CollectedMeasurement<double>(measurement, tags.ToArray()));
-            }
+        var thrownException = await Assert.ThrowsAsync<HttpRequestException>(async () => await recordTask);
+
+        _measurements.Should().HaveCount(1);
+        _measurements[0].Value.Should().BeGreaterThan(0);
+
+        var tags = _measurements[0].Tags;
+        tags.Should().Contain(new KeyValuePair<string, object?>("endpoint", "Hold"));
+        tags.Should().Contain(new KeyValuePair<string, object?>("success", false));
+        tags.Should().Contain(tag => tag.Key == "errorType");
+        var errorTypeTag = tags.FirstOrDefault(t => t.Key == "errorType");
+        errorTypeTag.Value.Should().Be("HttpRequestException");
+
+        thrownException.Should().Be(expectedException);
+    }
+
+    [Fact]
+    public async Task RecordRequest_ShouldRethrowException_AfterRecordingMetrics()
+    {
+        const string endpoint = "Hold";
+        var expectedException = new InvalidOperationException("Test exception");
+
+        var task = Task.FromException(expectedException);
+
+        var thrownException = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await _gvmsApiMetrics.RecordRequest(endpoint, task)
         );
 
-        meterListener.Start();
+        thrownException.Should().Be(expectedException);
+        _measurements.Should().HaveCount(1);
+        _measurements[0].Tags.Should().Contain(new KeyValuePair<string, object?>("success", false));
+        _measurements[0].Tags.Should().Contain(tag => tag.Key == "errorType");
+    }
 
-        _gvmsApiMetrics.RecordRequestDuration(endpoint, success, duration, errorType);
+    [Fact]
+    public async Task RecordRequest_ShouldRecordDuration_ForSuccessfulRequest()
+    {
+        const string endpoint = "Hold";
 
-        measurements.Should().HaveCount(1);
-        var tags = measurements[0].Tags;
-        tags.Should().Contain(new KeyValuePair<string, object?>("endpoint", endpoint));
-        tags.Should().Contain(new KeyValuePair<string, object?>("success", success));
-        tags.Should().Contain(new KeyValuePair<string, object?>("errorType", errorType));
+        await _gvmsApiMetrics.RecordRequest(endpoint, Task.Delay(10, TestContext.Current.CancellationToken));
+
+        _measurements.Should().HaveCount(1);
+        _measurements[0].Value.Should().BeGreaterThanOrEqualTo(10);
     }
 
     private record CollectedMeasurement<T>(T Value, KeyValuePair<string, object?>[] Tags)

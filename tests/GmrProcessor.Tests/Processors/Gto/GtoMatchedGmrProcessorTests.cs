@@ -14,9 +14,10 @@ namespace GmrProcessor.Tests.Processors.Gto;
 public class GtoMatchedGmrProcessorTests
 {
     private readonly Mock<ILogger<GtoMatchedGmrProcessor>> _logger = new();
-    private readonly Mock<IGtoMatchedGmrRepository> _mockMatchedGmrRepository = new();
-    private readonly Mock<IGtoImportTransitRepository> _mockImportTransitRepository = new();
-    private readonly Mock<IGvmsApiClientService> _gvms = new();
+    private readonly Mock<IGtoMatchedGmrCollection> _mockMatchedGmrRepository = new();
+    private readonly Mock<IGtoGmrCollection> _mockGtoGmrCollection = new();
+    private readonly Mock<IGtoImportTransitCollection> _mockImportTransitRepository = new();
+    private readonly Mock<IGvmsHoldService> _gvmsHoldService = new();
     private readonly GtoMatchedGmrProcessor _processor;
 
     public GtoMatchedGmrProcessorTests()
@@ -24,8 +25,9 @@ public class GtoMatchedGmrProcessorTests
         _processor = new GtoMatchedGmrProcessor(
             _logger.Object,
             _mockMatchedGmrRepository.Object,
+            _mockGtoGmrCollection.Object,
             _mockImportTransitRepository.Object,
-            _gvms.Object
+            _gvmsHoldService.Object
         );
     }
 
@@ -41,7 +43,7 @@ public class GtoMatchedGmrProcessorTests
 
         result.Should().Be(GtoMatchedGmrProcessorResult.SkippedNoTransit);
         _mockMatchedGmrRepository.Verify(
-            r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()),
+            r => r.UpsertMatchedItem(It.IsAny<MatchedGmr>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -72,7 +74,7 @@ public class GtoMatchedGmrProcessorTests
     }
 
     [Fact]
-    public async Task Process_WhenTransitOverrideChanges_ChangesHold()
+    public async Task Process_WhenImportTransitIsFound_PassesToGvmsHoldService()
     {
         var matched = BuildMatchedGmr();
         var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: false);
@@ -87,144 +89,20 @@ public class GtoMatchedGmrProcessorTests
             .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(importTransit);
         _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(gtoGmr);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
+            .Setup(r => r.UpsertMatchedItem(It.IsAny<MatchedGmr>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockMatchedGmrRepository
-            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([matched.Mrn!]);
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([importTransit]);
+        _mockGtoGmrCollection
+            .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(gtoGmr);
+        _gvmsHoldService
+            .Setup(x => x.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GvmsHoldResult.HoldPlaced);
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(GtoMatchedGmrProcessorResult.HoldPlaced);
-        _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Process_WhenTransitOverrideChanges_AndWhenMultipleTransitOverridesExist_ChangesHold()
-    {
-        var matched = BuildMatchedGmr();
-        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: false);
-        var importTransit = new ImportTransit
-        {
-            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
-            Mrn = matched.Mrn,
-            TransitOverrideRequired = true,
-        };
-        var importTransitTwo = new ImportTransit
-        {
-            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
-            Mrn = matched.Mrn,
-            TransitOverrideRequired = false,
-        };
-
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(gtoGmr);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _mockMatchedGmrRepository
-            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([matched.Mrn!]);
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([importTransit, importTransitTwo]);
-
-        var result = await _processor.Process(matched, CancellationToken.None);
-
-        result.Should().Be(GtoMatchedGmrProcessorResult.HoldPlaced);
-        _gvms.Verify(g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, true, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Process_WhenHoldAlreadyApplied_ReturnsNoHoldChange()
-    {
-        var matched = BuildMatchedGmr();
-        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: true);
-        var importTransit = new ImportTransit
-        {
-            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
-            Mrn = matched.Mrn,
-            TransitOverrideRequired = false,
-        };
-
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(gtoGmr);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _mockMatchedGmrRepository
-            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([matched.Mrn!]);
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([importTransit]);
-
-        var result = await _processor.Process(matched, CancellationToken.None);
-
-        result.Should().Be(GtoMatchedGmrProcessorResult.NoHoldChange);
-        _gvms.Verify(
-            g => g.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-    }
-
-    [Fact]
-    public async Task Process_WhenHoldAlreadyApplied_LogsAlreadyOnHoldMessage()
-    {
-        var matched = BuildMatchedGmr();
-        var gtoGmr = BuildGtoGmr(matched.Gmr, holdStatus: true);
-        var importTransit = new ImportTransit
-        {
-            Id = ImportPreNotificationFixtures.GenerateRandomReference(),
-            Mrn = matched.Mrn,
-            TransitOverrideRequired = false,
-        };
-
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(gtoGmr);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _mockMatchedGmrRepository
-            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([matched.Mrn!]);
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([importTransit]);
-
-        await _processor.Process(matched, CancellationToken.None);
-
-        _logger.Verify(
-            l =>
-                l.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>(
-                        (state, _) =>
-                            state.ToString()
-                            == $"Matched GMR {matched.Gmr.GmrId} is already on hold, no action was taken"
-                    ),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                ),
+        _gvmsHoldService.Verify(
+            g => g.PlaceOrReleaseHold(matched.Gmr.GmrId, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -248,15 +126,15 @@ public class GtoMatchedGmrProcessorTests
         _mockImportTransitRepository
             .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
+        _mockGtoGmrCollection
+            .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(GtoMatchedGmrProcessorResult.SkippedOldGmr);
-        _gvms.Verify(
-            g => g.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+        _gvmsHoldService.Verify(
+            g => g.PlaceOrReleaseHold(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -280,8 +158,8 @@ public class GtoMatchedGmrProcessorTests
         _mockImportTransitRepository
             .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
+        _mockGtoGmrCollection
+            .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         await _processor.Process(matched, CancellationToken.None);
@@ -318,18 +196,12 @@ public class GtoMatchedGmrProcessorTests
         _mockImportTransitRepository
             .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(importTransit);
-        _mockMatchedGmrRepository
-            .Setup(r => r.UpsertGmr(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
+        _mockGtoGmrCollection
+            .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);
         _mockMatchedGmrRepository
             .Setup(r => r.UpsertMatchedItem(matched, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockMatchedGmrRepository
-            .Setup(r => r.GetRelatedMrns(matched.Gmr.GmrId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([matched.Mrn!]);
-        _mockImportTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([importTransit]);
 
         await _processor.Process(matched, CancellationToken.None);
 

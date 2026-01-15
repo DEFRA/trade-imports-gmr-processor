@@ -5,7 +5,7 @@ namespace GmrProcessor.Processors.Gto;
 
 public interface IGtoImportPreNotificationProcessor
 {
-    Task ProcessAsync(
+    Task<GtoImportNotificationProcessorResult> Process(
         ResourceEvent<ImportPreNotification> importPreNotificationEvent,
         CancellationToken cancellationToken
     );

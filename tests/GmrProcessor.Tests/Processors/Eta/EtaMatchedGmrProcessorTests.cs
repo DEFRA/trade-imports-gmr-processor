@@ -3,6 +3,7 @@ using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
+using GmrProcessor.Data.Gto;
 using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Eta;
@@ -18,7 +19,7 @@ namespace GmrProcessor.Tests.Processors.Eta;
 public class EtaMatchedGmrProcessorTests
 {
     private readonly Mock<ILogger<EtaMatchedGmrProcessor>> _logger = new();
-    private readonly Mock<IGtoImportTransitRepository> _importTransitRepository = new();
+    private readonly Mock<IGtoImportTransitCollection> _importTransitRepository = new();
     private readonly Mock<ITradeImportsDataApiClient> _tradeImportsDataApi = new();
     private readonly Mock<IEtaGmrCollection> _etaGmrCollection = new();
     private readonly Mock<ITradeImportsServiceBus> _tradeImportsServiceBus = new();
