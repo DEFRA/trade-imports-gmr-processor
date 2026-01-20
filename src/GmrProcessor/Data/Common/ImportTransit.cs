@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace GmrProcessor.Data;
+namespace GmrProcessor.Data.Common;
 
 [ExcludeFromCodeCoverage]
 public class ImportTransit : IDataEntity

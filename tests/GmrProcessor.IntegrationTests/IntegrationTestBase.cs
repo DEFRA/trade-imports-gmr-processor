@@ -1,6 +1,10 @@
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using AutoFixture;
+using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
+using Defra.TradeImportsDataApi.Domain.Events;
+using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Extensions;
@@ -9,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TestFixtures;
 using Environment = System.Environment;
 
 namespace GmrProcessor.IntegrationTests;
@@ -129,5 +134,73 @@ public abstract class IntegrationTestBase
         };
 
         await sqsClient.SendMessageAsync(message, TestContext.Current.CancellationToken);
+    }
+
+    protected async Task<ResourceEvent<ImportPreNotification>> SendImportPreNotificationAsync(
+        string chedReference,
+        string mrn,
+        Action<ImportPreNotification>? configure = null,
+        bool waitForConsumption = true
+    )
+    {
+        var config = GetConfig<GtoDataEventsQueueConsumerOptions>();
+        var (sqsClient, queueUrl) = await GetSqsClient(config.QueueName);
+
+        var importPreNotification = ImportPreNotificationFixtures
+            .ImportPreNotificationFixture(chedReference)
+            .WithMrn(mrn)
+            .With(x => x.Status, "SUBMITTED")
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .Create();
+
+        configure?.Invoke(importPreNotification);
+
+        var resourceEvent = ImportPreNotificationFixtures
+            .ImportPreNotificationResourceEventFixture(importPreNotification)
+            .With(r => r.ResourceId, chedReference)
+            .Create();
+
+        await SendResourceEventMessageAsync(sqsClient, queueUrl, resourceEvent);
+
+        if (waitForConsumption)
+        {
+            await WaitForMessageConsumed(sqsClient, queueUrl);
+        }
+
+        return resourceEvent;
+    }
+
+    protected async Task<ResourceEvent<CustomsDeclaration>> SendCustomsDeclarationAsync(
+        string mrn,
+        IEnumerable<string> chedReferences,
+        Action<CustomsDeclaration>? configure = null,
+        bool waitForConsumption = true
+    )
+    {
+        var config = GetConfig<GtoDataEventsQueueConsumerOptions>();
+        var (sqsClient, queueUrl) = await GetSqsClient(config.QueueName);
+
+        var chedReferencesList = chedReferences.ToList();
+        var customsDeclaration = CustomsDeclarationFixtures.CustomsDeclarationFixture().Create();
+
+        customsDeclaration.ClearanceDecision = CustomsDeclarationFixtures
+            .ClearanceDecisionFixture(chedReferencesList)
+            .Create();
+
+        configure?.Invoke(customsDeclaration);
+
+        var resourceEvent = CustomsDeclarationFixtures
+            .CustomsDeclarationResourceEventFixture(customsDeclaration)
+            .With(r => r.ResourceId, mrn)
+            .Create();
+
+        await SendResourceEventMessageAsync(sqsClient, queueUrl, resourceEvent);
+
+        if (waitForConsumption)
+        {
+            await WaitForMessageConsumed(sqsClient, queueUrl);
+        }
+
+        return resourceEvent;
     }
 }

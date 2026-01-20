@@ -1,9 +1,9 @@
-using Defra.TradeImportsDataApi.Api.Client;
+using System.Linq.Expressions;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Eta;
-using GmrProcessor.Data.Gto;
 using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Eta;
@@ -11,6 +11,7 @@ using GmrProcessor.Processors.Gto;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using Moq;
 using TestFixtures;
 
@@ -19,8 +20,7 @@ namespace GmrProcessor.Tests.Processors.Eta;
 public class EtaMatchedGmrProcessorTests
 {
     private readonly Mock<ILogger<EtaMatchedGmrProcessor>> _logger = new();
-    private readonly Mock<IGtoImportTransitCollection> _importTransitRepository = new();
-    private readonly Mock<ITradeImportsDataApiClient> _tradeImportsDataApi = new();
+    private readonly Mock<IMatchReferenceRepository> _mockMatchReferenceRepository = new();
     private readonly Mock<IEtaGmrCollection> _etaGmrCollection = new();
     private readonly Mock<ITradeImportsServiceBus> _tradeImportsServiceBus = new();
     private readonly IOptions<TradeImportsServiceBusOptions> _serviceBusOptions = Options.Create(
@@ -37,8 +37,7 @@ public class EtaMatchedGmrProcessorTests
     {
         _processor = new EtaMatchedGmrProcessor(
             _logger.Object,
-            _importTransitRepository.Object,
-            _tradeImportsDataApi.Object,
+            _mockMatchReferenceRepository.Object,
             _etaGmrCollection.Object,
             _tradeImportsServiceBus.Object,
             _serviceBusOptions
@@ -54,8 +53,6 @@ public class EtaMatchedGmrProcessorTests
 
         result.Should().Be(EtaMatchedGmrProcessorResult.SkippedNotEmbarked);
         _etaGmrCollection.Verify(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()), Times.Never);
-        _tradeImportsDataApi.VerifyNoOtherCalls();
-        _importTransitRepository.VerifyNoOtherCalls();
         _tradeImportsServiceBus.Verify(
             s =>
                 s.SendMessagesAsync(
@@ -112,14 +109,6 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(newGmr, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.SkippedOldGmr);
-        _tradeImportsDataApi.Verify(
-            api => api.GetImportPreNotificationsByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-        _importTransitRepository.Verify(
-            r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
         _tradeImportsServiceBus.Verify(
             s =>
                 s.SendMessagesAsync(
@@ -183,8 +172,6 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.SkippedOldGmr);
-        _tradeImportsDataApi.VerifyNoOtherCalls();
-        _importTransitRepository.VerifyNoOtherCalls();
         _tradeImportsServiceBus.Verify(
             s =>
                 s.SendMessagesAsync(
@@ -204,12 +191,9 @@ public class EtaMatchedGmrProcessorTests
         _etaGmrCollection
             .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((EtaGmr?)null);
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
 
         await _processor.Process(matched, CancellationToken.None);
 
@@ -246,12 +230,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
@@ -285,12 +266,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
 
         await _processor.Process(matched, CancellationToken.None);
 
@@ -328,20 +306,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = transitId,
-                    Mrn = matched.Mrn,
-                    TransitOverrideRequired = false,
-                },
-            ]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { transitId });
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
@@ -363,7 +330,6 @@ public class EtaMatchedGmrProcessorTests
         var matched = BuildMatchedGmr();
         var existingGmr = BuildOlderMatchedGmr();
         var importRef = ImportPreNotificationFixtures.GenerateRandomReference();
-        var expectedChed = $"ChedMrn {{ ChedReference = {importRef}, Mrn = {matched.Mrn} }}";
 
         _etaGmrCollection
             .Setup(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()))
@@ -376,21 +342,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        var apiResponse = new ImportPreNotificationsResponse([
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).WithMrn(matched.Mrn!).Create()
-                )
-                .Create(),
-        ]);
-
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiResponse);
-
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importRef });
 
         await _processor.Process(matched, CancellationToken.None);
 
@@ -402,7 +356,7 @@ public class EtaMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Informing Ipaffs of update to arrival time for CHEDs {expectedChed} for GMR"
+                            == $"Informing Ipaffs of update to arrival time for CHEDs {importRef} for GMR"
                                 + $" {matched.Gmr.GmrId} with ETA {matched.Gmr.CheckedInCrossing!.LocalDateTimeOfArrival}"
                     ),
                     It.IsAny<Exception>(),
@@ -430,21 +384,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        var apiResponse = new ImportPreNotificationsResponse([
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).Create()
-                )
-                .Create(),
-        ]);
-
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiResponse);
-
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importRef });
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
@@ -480,28 +422,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        var apiResponse = new ImportPreNotificationsResponse([
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importReference).Create()
-                )
-                .Create(),
-        ]);
-
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiResponse);
-
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = transitId,
-                    Mrn = matched.Mrn,
-                    TransitOverrideRequired = false,
-                },
-            ]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importReference, transitId });
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
@@ -534,21 +457,9 @@ public class EtaMatchedGmrProcessorTests
                 }
             );
 
-        var apiResponse = new ImportPreNotificationsResponse([
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).Create()
-                )
-                .Create(),
-        ]);
-
-        _tradeImportsDataApi
-            .Setup(api => api.GetImportPreNotificationsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiResponse);
-
-        _importTransitRepository
-            .Setup(r => r.GetByMrns(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importRef });
 
         var result = await _processor.Process(matched, CancellationToken.None);
 

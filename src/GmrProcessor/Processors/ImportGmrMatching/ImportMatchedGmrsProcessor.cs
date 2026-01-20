@@ -1,7 +1,8 @@
-using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Common;
+using GmrProcessor.Data.ImportGmrMatching;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Options;
@@ -10,8 +11,8 @@ using MongoDB.Driver;
 namespace GmrProcessor.Processors.ImportGmrMatching;
 
 public class ImportMatchedGmrsProcessor(
-    ITradeImportsDataApiClient api,
     IMongoContext mongoContext,
+    IMatchReferenceRepository matchReferenceRepository,
     ITradeImportsServiceBus tradeImportsServiceBus,
     IOptions<TradeImportsServiceBusOptions> serviceBusOptions,
     ILogger<ImportMatchedGmrsProcessor> logger
@@ -23,13 +24,7 @@ public class ImportMatchedGmrsProcessor(
     )
     {
         var matchMrn = matchedGmr.Mrn!;
-
-        var getImportsTask = GetImportsByMrn(matchMrn, cancellationToken);
-        var getTransitsTask = GetTransitByMrn(matchMrn, cancellationToken);
-
-        await Task.WhenAll(getImportsTask, getTransitsTask);
-
-        List<string> relatedImports = [.. getImportsTask.Result, .. getTransitsTask.Result];
+        var relatedImports = await matchReferenceRepository.GetChedsByMrn(matchMrn, cancellationToken);
 
         if (relatedImports.Count == 0)
         {
@@ -86,24 +81,5 @@ public class ImportMatchedGmrsProcessor(
         await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
 
         return ImportMatchedGmrsProcessorResult.UpdatedIpaffs;
-    }
-
-    private async Task<string[]> GetTransitByMrn(string mrn, CancellationToken cancellationToken)
-    {
-        var transits = await mongoContext.ImportTransits.FindMany<ImportTransit>(
-            it => it.Mrn == mrn,
-            cancellationToken
-        );
-
-        return transits.Select(it => it.Id).ToArray();
-    }
-
-    private async Task<string[]> GetImportsByMrn(string matchMrn, CancellationToken cancellationToken)
-    {
-        var importPreNotifications = await api.GetImportPreNotificationsByMrn(matchMrn, cancellationToken);
-
-        return importPreNotifications
-            .ImportPreNotifications.Select(i => i.ImportPreNotification.ReferenceNumber!)
-            .ToArray();
     }
 }

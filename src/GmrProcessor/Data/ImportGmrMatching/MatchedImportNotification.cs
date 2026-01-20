@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace GmrProcessor.Data;
+namespace GmrProcessor.Data.ImportGmrMatching;
 
 [ExcludeFromCodeCoverage]
 public class MatchedImportNotification : IDataEntity

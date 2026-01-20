@@ -4,7 +4,6 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
 using Azure.Messaging.ServiceBus;
-using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using GmrProcessor.Config;
 using GmrProcessor.Metrics;
@@ -96,37 +95,6 @@ public static class ServiceCollectionExtensions
                     .WithName(queueName);
             }
         });
-        return services;
-    }
-
-    public static IServiceCollection AddDataApiHttpClient(this IServiceCollection services)
-    {
-        var resilienceOptions = new HttpStandardResilienceOptions { Retry = { UseJitter = true } };
-        resilienceOptions.Retry.DisableForUnsafeHttpMethods();
-
-        services
-            .AddTradeImportsDataApiClient()
-            .ConfigureHttpClient(
-                (sp, c) =>
-                {
-                    sp.GetRequiredService<IOptions<DataApiOptions>>().Value.Configure(c);
-
-                    // Disable the HttpClient timeout to allow the resilient pipeline below
-                    // to handle all timeouts
-                    c.Timeout = Timeout.InfiniteTimeSpan;
-                }
-            )
-            .AddResilienceHandler(
-                "DataApi",
-                builder =>
-                {
-                    builder
-                        .AddTimeout(resilienceOptions.TotalRequestTimeout)
-                        .AddRetry(resilienceOptions.Retry)
-                        .AddTimeout(resilienceOptions.AttemptTimeout);
-                }
-            );
-
         return services;
     }
 

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -12,16 +13,17 @@ using Microsoft.Extensions.Options;
 
 namespace GmrProcessor.Consumers;
 
-public sealed class GtoDataEventsQueueConsumer(
-    ILogger<GtoDataEventsQueueConsumer> logger,
+public sealed class DataEventsQueueConsumer(
+    ILogger<DataEventsQueueConsumer> logger,
     ConsumerMetrics consumerMetrics,
     IAmazonSQS sqsClient,
     IOptions<GtoDataEventsQueueConsumerOptions> options,
-    IGtoImportPreNotificationProcessor importPreNotificationProcessor
-) : SqsConsumer<GtoDataEventsQueueConsumer>(logger, consumerMetrics, sqsClient, options.Value.QueueName)
+    IGtoImportPreNotificationProcessor importPreNotificationProcessor,
+    IMrnChedMatchProcessor mrnChedMatchProcessor
+) : SqsConsumer<DataEventsQueueConsumer>(logger, consumerMetrics, sqsClient, options.Value.QueueName)
 {
     private static readonly JsonSerializerOptions s_defaultSerializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly ILogger<GtoDataEventsQueueConsumer> _logger = logger;
+    private readonly ILogger<DataEventsQueueConsumer> _logger = logger;
 
     protected override int WaitTimeSeconds { get; } = options.Value.WaitTimeSeconds;
 
@@ -36,6 +38,11 @@ public sealed class GtoDataEventsQueueConsumer(
             case ResourceEventResourceTypes.ImportPreNotification:
                 var importPreNotification = DeserializeAsync<ResourceEvent<ImportPreNotification>>(json)!;
                 await importPreNotificationProcessor.Process(importPreNotification, stoppingToken);
+                break;
+
+            case ResourceEventResourceTypes.CustomsDeclaration:
+                var customsDeclaration = DeserializeAsync<ResourceEvent<CustomsDeclaration>>(json)!;
+                await mrnChedMatchProcessor.ProcessCustomsDeclaration(customsDeclaration, stoppingToken);
                 break;
         }
     }

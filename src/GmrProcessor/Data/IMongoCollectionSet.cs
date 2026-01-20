@@ -34,4 +34,11 @@ public interface IMongoCollectionSet<T>
         UpdateOptions options,
         CancellationToken cancellationToken
     );
+
+    Task ReplaceOne(
+        Expression<Func<T, bool>> filter,
+        T replacement,
+        ReplaceOptions options,
+        CancellationToken cancellationToken
+    );
 }

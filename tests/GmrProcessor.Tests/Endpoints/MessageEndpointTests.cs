@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Auditing;
 using GmrProcessor.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;

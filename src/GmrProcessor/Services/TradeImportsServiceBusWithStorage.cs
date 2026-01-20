@@ -1,5 +1,6 @@
 using System.Text.Json;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Auditing;
 using MongoDB.Driver;
 
 namespace GmrProcessor.Services;
