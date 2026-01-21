@@ -1,3 +1,5 @@
+using GmrProcessor.Data.Common;
+
 namespace GmrProcessor.Data.Gto;
 
 public interface IGtoImportTransitCollection

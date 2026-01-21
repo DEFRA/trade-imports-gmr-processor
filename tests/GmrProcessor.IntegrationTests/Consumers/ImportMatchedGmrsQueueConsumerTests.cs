@@ -12,9 +12,8 @@ using TestFixtures;
 namespace GmrProcessor.IntegrationTests.Consumers;
 
 [Collection("IntegrationTest")]
-public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
+public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFixture)
     : IntegrationTestBase,
-        IClassFixture<WireMockClient>,
         IClassFixture<ServiceBusFixture>
 {
     [Fact]
@@ -25,14 +24,10 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, 
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
-        var expectedImport = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
-            .Create();
+        var expectedChedReference = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        await wireMockClient.MockImportPreNotificationsByMrn(
-            expectedMrn,
-            ImportPreNotificationFixtures.ImportPreNotificationResponseFixture(expectedImport).Create()
-        );
+        var importEvent = await SendImportPreNotificationAsync(expectedChedReference, expectedMrn);
+        var expectedImport = importEvent.Resource!;
 
         var matchedGmrsConfig = GetConfig<ImportMatchedGmrsQueueOptions>();
         var (matchedGmrsClient, matchedGmrsQueueUrl) = await GetSqsClient(matchedGmrsConfig.QueueName);
@@ -99,8 +94,6 @@ public class ImportMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, 
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
         var expectedTransitReference = ImportPreNotificationFixtures.GenerateRandomReference();
-
-        await wireMockClient.MockImportPreNotificationsByMrn(expectedMrn);
 
         var dataEventsQueueConfig = GetConfig<GtoDataEventsQueueConsumerOptions>();
         var (sqsClient, queueUrl) = await GetSqsClient(dataEventsQueueConfig.QueueName);

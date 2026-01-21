@@ -1,12 +1,14 @@
 using System.Linq.Expressions;
-using Defra.TradeImportsDataApi.Api.Client;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Common;
+using GmrProcessor.Data.ImportGmrMatching;
 using GmrProcessor.Processors.ImportGmrMatching;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
@@ -15,11 +17,10 @@ namespace GmrProcessor.Tests.Processors.ImportGmrMatching;
 
 public class ImportMatchedGmrsProcessorTests
 {
-    private readonly Mock<ITradeImportsDataApiClient> _mockApiClient = new();
     private readonly Mock<IMongoContext> _mockMongoContext = new();
+    private readonly Mock<IMatchReferenceRepository> _mockMatchReferenceRepository = new();
     private readonly Mock<IMongoCollectionSet<MatchedImportNotification>> _mockMatchedImportNotificationsCollection =
         new();
-    private readonly Mock<IMongoCollectionSet<ImportTransit>> _mockImportTransitsCollection = new();
     private readonly Mock<ITradeImportsServiceBus> _mockServiceBusSenderService = new();
     private readonly Mock<ILogger<ImportMatchedGmrsProcessor>> _logger = new();
     private readonly ImportMatchedGmrsProcessor _processor;
@@ -29,10 +30,9 @@ public class ImportMatchedGmrsProcessorTests
         _mockMongoContext
             .Setup(x => x.MatchedImportNotifications)
             .Returns(_mockMatchedImportNotificationsCollection.Object);
-        _mockMongoContext.Setup(x => x.ImportTransits).Returns(_mockImportTransitsCollection.Object);
         _processor = new ImportMatchedGmrsProcessor(
-            _mockApiClient.Object,
             _mockMongoContext.Object,
+            _mockMatchReferenceRepository.Object,
             _mockServiceBusSenderService.Object,
             Options.Create(
                 new TradeImportsServiceBusOptions
@@ -56,43 +56,9 @@ public class ImportMatchedGmrsProcessorTests
         var importRef2 = ImportPreNotificationFixtures.GenerateRandomReference();
         var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        // Mock API response with import pre-notifications
-        var apiResponse = new ImportPreNotificationsResponse([
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef1).Create()
-                )
-                .Create(),
-            ImportPreNotificationFixtures
-                .ImportPreNotificationResponseFixture(
-                    ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef2).Create()
-                )
-                .Create(),
-        ]);
-
-        _mockApiClient
-            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(apiResponse);
-
-        // Mock transit data
-        var transits = new List<ImportTransit>
-        {
-            new()
-            {
-                Id = transitId,
-                Mrn = mrn,
-                TransitOverrideRequired = false,
-            },
-        };
-
-        _mockImportTransitsCollection
-            .Setup(x =>
-                x.FindMany<ImportTransit>(
-                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(transits);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importRef1, importRef2, transitId });
 
         // Mock that no items are already matched
         _mockMatchedImportNotificationsCollection
@@ -147,17 +113,9 @@ public class ImportMatchedGmrsProcessorTests
         var mrn = CustomsDeclarationFixtures.GenerateMrn();
         var matchedGmr = new MatchedGmr { Mrn = mrn, Gmr = GmrFixtures.GmrFixture().Create() };
 
-        _mockApiClient
-            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-        _mockImportTransitsCollection
-            .Setup(x =>
-                x.FindMany<ImportTransit>(
-                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
         _mockMatchedImportNotificationsCollection
             .Setup(x =>
                 x.FindMany<MatchedImportNotification>(
@@ -207,26 +165,9 @@ public class ImportMatchedGmrsProcessorTests
 
         var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        // Mock API response with import pre-notifications
-        _mockApiClient
-            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-
-        // Mock transit data
-        var transit = new ImportTransit
-        {
-            Id = transitId,
-            Mrn = mrn,
-            TransitOverrideRequired = false,
-        };
-        _mockImportTransitsCollection
-            .Setup(x =>
-                x.FindMany<ImportTransit>(
-                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([transit]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { transitId });
 
         // Mock that items are already matched
         var previousMatch = new MatchedImportNotification { Id = transitId, Mrn = mrn };
@@ -254,26 +195,11 @@ public class ImportMatchedGmrsProcessorTests
         var mrn = CustomsDeclarationFixtures.GenerateMrn();
         var matchedGmr = new MatchedGmr { Mrn = mrn, Gmr = GmrFixtures.GmrFixture().Create() };
 
-        _mockApiClient
-            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportPreNotificationsResponse([]));
-
         var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
-        _mockImportTransitsCollection
-            .Setup(x =>
-                x.FindMany<ImportTransit>(
-                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = transitId,
-                    Mrn = mrn,
-                    TransitOverrideRequired = false,
-                },
-            ]);
+
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { transitId });
 
         _mockMatchedImportNotificationsCollection
             .Setup(x =>
@@ -312,33 +238,9 @@ public class ImportMatchedGmrsProcessorTests
         var importRef = ImportPreNotificationFixtures.GenerateRandomReference();
         var transitId = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        _mockApiClient
-            .Setup(x => x.GetImportPreNotificationsByMrn(mrn, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-                new ImportPreNotificationsResponse([
-                    ImportPreNotificationFixtures
-                        .ImportPreNotificationResponseFixture(
-                            ImportPreNotificationFixtures.ImportPreNotificationFixture(importRef).Create()
-                        )
-                        .Create(),
-                ])
-            );
-
-        _mockImportTransitsCollection
-            .Setup(x =>
-                x.FindMany<ImportTransit>(
-                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync([
-                new ImportTransit
-                {
-                    Id = transitId,
-                    Mrn = mrn,
-                    TransitOverrideRequired = false,
-                },
-            ]);
+        _mockMatchReferenceRepository
+            .Setup(x => x.GetChedsByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { importRef, transitId });
 
         _mockMatchedImportNotificationsCollection
             .Setup(x =>

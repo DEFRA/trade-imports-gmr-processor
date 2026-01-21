@@ -1,6 +1,7 @@
 using AutoFixture;
 using Defra.TradeImportsGmrFinder.Domain.Events;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Extensions;
 using GmrProcessor.Processors.Gto;

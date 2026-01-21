@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace GmrProcessor.Data;
+namespace GmrProcessor.Data.Auditing;
 
 [ExcludeFromCodeCoverage]
 public class MessageAudit : IDataEntity

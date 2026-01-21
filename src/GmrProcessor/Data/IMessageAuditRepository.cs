@@ -1,3 +1,5 @@
+using GmrProcessor.Data.Auditing;
+
 namespace GmrProcessor.Data;
 
 public interface IMessageAuditRepository

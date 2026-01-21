@@ -1,3 +1,5 @@
+using GmrProcessor.Data.Common;
+
 namespace GmrProcessor.Data.Gto;
 
 public class GtoImportTransitCollection(IMongoContext mongo) : IGtoImportTransitCollection
@@ -7,6 +9,9 @@ public class GtoImportTransitCollection(IMongoContext mongo) : IGtoImportTransit
 
     public Task<List<ImportTransit>> GetByMrns(List<string> mrns, CancellationToken cancellationToken)
     {
-        return mongo.ImportTransits.FindMany<object>(f => f.Mrn != null && mrns.Contains(f.Mrn), cancellationToken);
+        return mongo.ImportTransits.FindMany<ImportTransit>(
+            f => f.Mrn != null && mrns.Contains(f.Mrn),
+            cancellationToken
+        );
     }
 }

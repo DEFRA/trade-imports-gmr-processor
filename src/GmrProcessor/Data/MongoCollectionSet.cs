@@ -60,4 +60,11 @@ public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? colle
         UpdateOptions options,
         CancellationToken cancellationToken
     ) => await Collection.UpdateOneAsync(filter, update, options, cancellationToken);
+
+    public async Task ReplaceOne(
+        Expression<Func<T, bool>> filter,
+        T replacement,
+        ReplaceOptions options,
+        CancellationToken cancellationToken
+    ) => await Collection.ReplaceOneAsync(filter, replacement, options, cancellationToken);
 }

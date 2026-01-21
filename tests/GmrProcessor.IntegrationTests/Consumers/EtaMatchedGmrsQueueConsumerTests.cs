@@ -11,9 +11,8 @@ using TestFixtures;
 namespace GmrProcessor.IntegrationTests.Consumers;
 
 [Collection("IntegrationTest")]
-public class EtaMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, ServiceBusFixture serviceBusFixture)
+public class EtaMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFixture)
     : IntegrationTestBase,
-        IClassFixture<WireMockClient>,
         IClassFixture<ServiceBusFixture>
 {
     [Fact]
@@ -24,16 +23,11 @@ public class EtaMatchedGmrsQueueConsumerTests(WireMockClient wireMockClient, Ser
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
-        var expectedImport = ImportPreNotificationFixtures
-            .ImportPreNotificationFixture(ImportPreNotificationFixtures.GenerateRandomReference())
-            .WithMrn(expectedMrn)
-            .Create();
-        var expectedCheckedInDateTime = DateTime.UtcNow;
+        var expectedChedReference = ImportPreNotificationFixtures.GenerateRandomReference();
 
-        await wireMockClient.MockImportPreNotificationsByMrn(
-            expectedMrn,
-            ImportPreNotificationFixtures.ImportPreNotificationResponseFixture(expectedImport).Create()
-        );
+        var importEvent = await SendImportPreNotificationAsync(expectedChedReference, expectedMrn);
+        var expectedImport = importEvent.Resource!;
+        var expectedCheckedInDateTime = DateTime.UtcNow;
 
         var matchedGmrsConfig = GetConfig<EtaMatchedGmrsQueueOptions>();
         var (matchedGmrsClient, matchedGmrsQueueUrl) = await GetSqsClient(matchedGmrsConfig.QueueName);

@@ -1,4 +1,4 @@
-namespace GmrProcessor.Data;
+namespace GmrProcessor.Data.Auditing;
 
 public static class IntegrationType
 {

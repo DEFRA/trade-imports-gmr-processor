@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using GmrProcessor.Data.Auditing;
 using GmrProcessor.Data.Gto;
+using GmrProcessor.Data.Matching;
 using GmrProcessor.Utils.Mongo;
 using MongoDB.Driver;
 
@@ -16,6 +18,7 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
         logger.LogInformation("Updating Mongo indexes");
         await InitGtoMatchedGmrItemCollection(cancellationToken);
         await InitMessageAuditCollection(cancellationToken);
+        await InitMrnChedMatchCollection(cancellationToken);
     }
 
     private async Task InitGtoMatchedGmrItemCollection(CancellationToken cancellationToken)
@@ -64,6 +67,30 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
             new CreateIndexModel<MessageAudit>(
                 Builders<MessageAudit>.IndexKeys.Ascending(x => x.Target),
                 new CreateIndexOptions { Name = "Target_Index", Background = true }
+            ),
+            cancellationToken
+        );
+    }
+
+    private async Task InitMrnChedMatchCollection(CancellationToken cancellationToken)
+    {
+        await WithCollectionName<MrnChedMatch>("MrnChedMatch")(
+            new CreateIndexModel<MrnChedMatch>(
+                Builders<MrnChedMatch>.IndexKeys.Ascending(x => x.ChedReferences),
+                new CreateIndexOptions { Name = "ChedReferences_Index", Background = true }
+            ),
+            cancellationToken
+        );
+
+        await WithCollectionName<MrnChedMatch>("MrnChedMatch")(
+            new CreateIndexModel<MrnChedMatch>(
+                Builders<MrnChedMatch>.IndexKeys.Ascending(x => x.UpdatedDateTime),
+                new CreateIndexOptions
+                {
+                    Name = "UpdatedDateTime_TTL",
+                    Background = true,
+                    ExpireAfter = TimeSpan.FromDays(30),
+                }
             ),
             cancellationToken
         );

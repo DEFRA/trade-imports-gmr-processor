@@ -3,8 +3,10 @@ using FluentValidation;
 using GmrProcessor.Config;
 using GmrProcessor.Consumers;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Auditing;
 using GmrProcessor.Data.Eta;
 using GmrProcessor.Data.Gto;
+using GmrProcessor.Data.Matching;
 using GmrProcessor.Endpoints;
 using GmrProcessor.Extensions;
 using GmrProcessor.Metrics;
@@ -58,12 +60,6 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
 
     builder.Services.AddHttpProxyClient();
 
-    builder
-        .Services.AddOptions<DataApiOptions>()
-        .BindConfiguration(DataApiOptions.SectionName)
-        .ValidateDataAnnotations();
-    builder.Services.AddDataApiHttpClient();
-
     builder.Services.AddOptions<CdpOptions>().Bind(builder.Configuration);
     builder.Services.AddOptions<LocalStackOptions>().Bind(builder.Configuration);
     builder.Services.AddOptions<FeatureOptions>().Bind(builder.Configuration);
@@ -107,6 +103,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddSingleton<IGtoMatchedGmrCollection, GtoMatchedGmrCollection>();
 
     builder.Services.AddSingleton<IGtoImportPreNotificationProcessor, GtoImportPreNotificationProcessor>();
+    builder.Services.AddSingleton<IMrnChedMatchProcessor, MrnChedMatchProcessor>();
     builder.Services.AddSingleton<IGtoMatchedGmrProcessor, GtoMatchedGmrProcessor>();
     builder.Services.AddSingleton<IImportMatchedGmrsProcessor, ImportMatchedGmrsProcessor>();
 
@@ -114,7 +111,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     if (featureOptions.EnableSqsConsumers)
     {
         builder.Services.AddHostedService<EtaMatchedGmrsQueueConsumer>();
-        builder.Services.AddHostedService<GtoDataEventsQueueConsumer>();
+        builder.Services.AddHostedService<DataEventsQueueConsumer>();
         builder.Services.AddHostedService<GtoMatchedGmrsQueueConsumer>();
         builder.Services.AddHostedService<ImportMatchedGmrsQueueConsumer>();
     }
@@ -124,6 +121,7 @@ static void ConfigureBuilder(WebApplicationBuilder builder)
     builder.Services.AddHealthChecks();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
     builder.Services.AddSingleton<IMessageAuditRepository, MessageAuditRepository>();
+    builder.Services.AddSingleton<IMatchReferenceRepository, MatchReferenceRepository>();
 }
 
 [ExcludeFromCodeCoverage]

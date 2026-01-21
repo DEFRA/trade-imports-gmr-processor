@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -17,15 +18,16 @@ using TestFixtures;
 
 namespace GmrProcessor.Tests.Consumers;
 
-public class GtoDataEventsQueueConsumerTests
+public class DataEventsQueueConsumerTests
 {
     private readonly Mock<IGtoImportPreNotificationProcessor> _importPreNotificationProcessor = new();
-    private readonly GtoDataEventsQueueConsumer _consumer;
+    private readonly Mock<IMrnChedMatchProcessor> _mrnChedMatchProcessor = new();
+    private readonly DataEventsQueueConsumer _consumer;
 
-    public GtoDataEventsQueueConsumerTests()
+    public DataEventsQueueConsumerTests()
     {
-        _consumer = new GtoDataEventsQueueConsumer(
-            NullLogger<GtoDataEventsQueueConsumer>.Instance,
+        _consumer = new DataEventsQueueConsumer(
+            NullLogger<DataEventsQueueConsumer>.Instance,
             new ConsumerMetrics(MockMeterFactory.Create()),
             new Mock<IAmazonSQS>().Object,
             Options.Create(
@@ -35,7 +37,8 @@ public class GtoDataEventsQueueConsumerTests
                     WaitTimeSeconds = 1,
                 }
             ),
-            _importPreNotificationProcessor.Object
+            _importPreNotificationProcessor.Object,
+            _mrnChedMatchProcessor.Object
         );
     }
 
@@ -77,6 +80,48 @@ public class GtoDataEventsQueueConsumerTests
     }
 
     [Fact]
+    public async Task ProcessMessageAsync_WhenResourceTypeIsCustomsDeclaration_SendsToMrnChedMatchProcessor()
+    {
+        var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var body = JsonSerializer.Serialize(
+            CustomsDeclarationFixtures
+                .CustomsDeclarationResourceEventFixture(CustomsDeclarationFixtures.CustomsDeclarationFixture().Create())
+                .Create(),
+            serializerOptions
+        );
+
+        var message = new Message
+        {
+            Body = body,
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                [SqsMessageHeaders.ResourceType] = new()
+                {
+                    DataType = "String",
+                    StringValue = ResourceEventResourceTypes.CustomsDeclaration,
+                },
+            },
+        };
+
+        await InvokeProcessMessageAsync(message, CancellationToken.None);
+
+        _mrnChedMatchProcessor.Verify(
+            processor =>
+                processor.ProcessCustomsDeclaration(
+                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+
+        _importPreNotificationProcessor.Verify(
+            processor =>
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task ProcessMessageAsync_WhenResourceTypeUnhandled_DoesNothing()
     {
         var message = new Message
@@ -93,6 +138,42 @@ public class GtoDataEventsQueueConsumerTests
         _importPreNotificationProcessor.Verify(
             processor =>
                 processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task ProcessMessageAsync_WhenDeserializationFails_ThrowsJsonException()
+    {
+        var message = new Message
+        {
+            Body = "{\"invalid\": \"structure\"}",
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                [SqsMessageHeaders.ResourceType] = new()
+                {
+                    DataType = "String",
+                    StringValue = ResourceEventResourceTypes.ImportPreNotification,
+                },
+            },
+        };
+
+        var act = async () => await InvokeProcessMessageAsync(message, CancellationToken.None);
+
+        await act.Should().ThrowAsync<JsonException>().WithMessage("Failed to deserialise JSON to*");
+
+        _importPreNotificationProcessor.Verify(
+            processor =>
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+        _mrnChedMatchProcessor.Verify(
+            processor =>
+                processor.ProcessCustomsDeclaration(
+                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -132,7 +213,7 @@ public class GtoDataEventsQueueConsumerTests
 
     private Task InvokeProcessMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        var method = typeof(GtoDataEventsQueueConsumer).GetMethod(
+        var method = typeof(DataEventsQueueConsumer).GetMethod(
             "ProcessMessageAsync",
             BindingFlags.Instance | BindingFlags.NonPublic
         )!;

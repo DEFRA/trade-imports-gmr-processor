@@ -63,7 +63,6 @@ services:
       USE_LOCALSTACK: true
 
   asb-backend:
-    container_name: processor-asb-backend
     environment:
       SQL_WAIT_INTERVAL: 0
       SQL_SERVER: sqledge
@@ -81,7 +80,6 @@ services:
       - "./compose/asb.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
 
   asb:
-    container_name: processor-asb
     image: alpine/curl:latest
     depends_on:
       asb-backend:
@@ -95,7 +93,6 @@ services:
       start_period: 5s
 
   sqledge:
-    container_name: processor-sqledge
     healthcheck:
       interval: 5s
       retries: 10

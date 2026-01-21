@@ -1,6 +1,7 @@
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;

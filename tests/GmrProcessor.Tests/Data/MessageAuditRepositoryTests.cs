@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using GmrProcessor.Data;
+using GmrProcessor.Data.Auditing;
 using Microsoft.Extensions.Logging;
 using Moq;
 

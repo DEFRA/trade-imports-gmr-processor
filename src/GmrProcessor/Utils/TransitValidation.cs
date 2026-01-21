@@ -24,12 +24,6 @@ public class TransitResult
     public static TransitResult InvalidTransit(string reason) => new(false, reason, string.Empty);
 }
 
-public static partial class MrnRegex
-{
-    [GeneratedRegex(@"^\d{2}[A-Z]{2}[A-Za-z0-9]{14}$", RegexOptions.IgnoreCase, "en-GB")]
-    public static partial Regex Value();
-}
-
 public static class TransitValidation
 {
     private const string NewComputerisedTransitSystemReference = "NCTS";
