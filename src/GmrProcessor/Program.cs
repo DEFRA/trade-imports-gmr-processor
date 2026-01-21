@@ -135,6 +135,7 @@ static WebApplication SetupApplication(WebApplication app)
     if (featureOptions.EnableDevEndpoints)
     {
         app.MapMessageEndpoints();
+        app.MapConsumerEndpoints();
     }
 
     app.UseEmfExporter(app.Environment.ApplicationName);
