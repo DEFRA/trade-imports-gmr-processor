@@ -508,8 +508,13 @@ public class GvmsHoldServiceTests
         messageAudit.MessageType.Should().Be("GvmsHoldRequest");
 
         var deserializedBody = JsonSerializer.Deserialize<JsonElement>(messageAudit.MessageBody);
-        Assert.Equal(gmrId, deserializedBody.GetProperty("gmrId").GetString());
-        Assert.True(deserializedBody.GetProperty("holdStatus").GetBoolean());
+        Assert.Equal(gmrId, deserializedBody.GetProperty("GmrId").GetString());
+        Assert.True(deserializedBody.GetProperty("Hold").GetBoolean());
+
+        var mrnsArray = deserializedBody.GetProperty("Mrns");
+        Assert.Equal(JsonValueKind.Array, mrnsArray.ValueKind);
+        Assert.Single(mrnsArray.EnumerateArray());
+        Assert.Equal("mrn1", mrnsArray[0].GetString());
     }
 
     [Fact]

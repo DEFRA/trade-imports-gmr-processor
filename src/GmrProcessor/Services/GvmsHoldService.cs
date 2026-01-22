@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
@@ -77,7 +76,7 @@ public class GvmsHoldService(
         }
         finally
         {
-            await StoreGvmsHold(gmrId, anyImportTransitsRequireHold, cancellationToken);
+            await StoreGvmsHold(gmrId, relatedMrns, anyImportTransitsRequireHold, cancellationToken);
         }
 
         await mongo.GtoGmr.UpdateHoldStatus(gmrId, anyImportTransitsRequireHold, cancellationToken);
@@ -85,7 +84,12 @@ public class GvmsHoldService(
         return anyImportTransitsRequireHold ? GvmsHoldResult.HoldPlaced : GvmsHoldResult.HoldReleased;
     }
 
-    private async Task StoreGvmsHold(string gmrId, bool holdStatus, CancellationToken cancellationToken)
+    private async Task StoreGvmsHold(
+        string gmrId,
+        List<string> mrns,
+        bool holdStatus,
+        CancellationToken cancellationToken
+    )
     {
         if (!_features.EnableStoreOutboundMessages)
         {
@@ -99,7 +103,14 @@ public class GvmsHoldService(
                 Direction = MessageDirection.Outbound,
                 IntegrationType = IntegrationType.GvmsApi,
                 Target = "GVMS Hold API",
-                MessageBody = JsonSerializer.Serialize(new { gmrId, holdStatus }),
+                MessageBody = JsonSerializer.Serialize(
+                    new GvmsHoldRecord
+                    {
+                        GmrId = gmrId,
+                        Mrns = mrns,
+                        Hold = holdStatus,
+                    }
+                ),
                 Timestamp = DateTime.UtcNow,
                 MessageType = "GvmsHoldRequest",
             };
