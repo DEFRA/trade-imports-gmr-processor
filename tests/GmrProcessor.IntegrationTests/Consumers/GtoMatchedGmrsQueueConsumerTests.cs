@@ -97,7 +97,7 @@ public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
             async () =>
             {
                 return await Mongo.GtoGmr.FindOne(
-                    g => g.Gmr.GmrId == expectedGmr && g.HoldStatus,
+                    g => g.Gmr.GmrId == expectedGmr && g.HoldStatus == true,
                     TestContext.Current.CancellationToken
                 );
             },
@@ -105,5 +105,7 @@ public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
         );
 
         gtoGmrRecord.Should().NotBeNull();
+        gtoGmrRecord.HoldStatus.Should().BeTrue();
+        gtoGmrRecord.UpdatedDateTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 }

@@ -14,7 +14,7 @@ public class GtoGmr : IDataEntity
     public required Gmr Gmr { get; init; }
 
     [BsonElement("holdStatus")]
-    public bool HoldStatus { get; init; }
+    public bool? HoldStatus { get; init; }
 
     [BsonElement("updatedDateTime")]
     public required DateTime UpdatedDateTime { get; init; }

@@ -50,7 +50,7 @@ public class GvmsHoldService(
             logger.LogInformation(
                 "Matched GMR {GmrId} is already {State}, no action was taken",
                 gmrId,
-                gmr.HoldStatus ? "on hold" : "released"
+                gmr.HoldStatus == true ? "on hold" : "released"
             );
             return GvmsHoldResult.NoHoldChange;
         }

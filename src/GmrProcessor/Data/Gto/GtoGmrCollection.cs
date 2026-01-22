@@ -59,6 +59,7 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
                                 }
                             )
                         },
+                        { "holdStatus", new BsonDocument("$ifNull", new BsonArray { "$holdStatus", false }) },
                     }
                 ),
             }
@@ -75,7 +76,9 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
     public async Task UpdateHoldStatus(string gmrId, bool holdStatus, CancellationToken cancellationToken)
     {
         var filter = Builders<GtoGmr>.Filter.Where(x => x.Id == gmrId);
-        var update = Builders<GtoGmr>.Update.Set(x => x.HoldStatus, holdStatus);
+        var update = Builders<GtoGmr>
+            .Update.Set(x => x.HoldStatus, holdStatus)
+            .Set(x => x.UpdatedDateTime, DateTime.UtcNow);
 
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
     }

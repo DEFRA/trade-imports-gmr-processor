@@ -130,6 +130,61 @@ public class GtoGmrCollectionTests
 
         var renderedUpdate = capturedUpdate!.Render(renderArgs).ToString();
         renderedUpdate.Should().Contain("\"gmr\" : { \"$cond\"");
+        renderedUpdate.Should().Contain("holdStatus");
+    }
+
+    [Fact]
+    public async Task UpdateOrInsert_PreservesHoldStatusField()
+    {
+        var gmr = GmrFixtures.GmrFixture().Create();
+        var gtoGmr = new GtoGmr
+        {
+            Id = gmr.GmrId,
+            Gmr = gmr,
+            UpdatedDateTime = gmr.GetUpdatedDateTime(),
+        };
+
+        var mockCollection = new Mock<IMongoCollection<GtoGmr>>();
+        UpdateDefinition<GtoGmr>? capturedUpdate = null;
+
+        mockCollection
+            .Setup(c =>
+                c.FindOneAndUpdateAsync(
+                    It.IsAny<FilterDefinition<GtoGmr>>(),
+                    It.IsAny<UpdateDefinition<GtoGmr>>(),
+                    It.IsAny<FindOneAndUpdateOptions<GtoGmr, GtoGmr>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback(
+                (
+                    FilterDefinition<GtoGmr> _,
+                    UpdateDefinition<GtoGmr> u,
+                    FindOneAndUpdateOptions<GtoGmr, GtoGmr> _,
+                    CancellationToken _
+                ) =>
+                {
+                    capturedUpdate = u;
+                }
+            )
+            .Returns(Task.FromResult<GtoGmr>(null!));
+
+        _mockMongoDbClientFactory
+            .Setup(f => f.GetCollection<GtoGmr>(GtoGmrCollection.CollectionName))
+            .Returns(mockCollection.Object);
+
+        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object);
+
+        await collection.UpdateOrInsert(gtoGmr, CancellationToken.None);
+
+        var renderArgs = new RenderArgs<GtoGmr>(
+            BsonSerializer.SerializerRegistry.GetSerializer<GtoGmr>(),
+            BsonSerializer.SerializerRegistry
+        );
+
+        var renderedUpdate = capturedUpdate!.Render(renderArgs).ToString();
+        renderedUpdate.Should().Contain("holdStatus");
+        renderedUpdate.Should().Contain("$ifNull");
     }
 
     [Fact]
@@ -181,6 +236,7 @@ public class GtoGmrCollectionTests
 
         var renderedUpdate = capturedUpdate!.Render(renderArgs).ToString();
         renderedUpdate.Should().Contain("holdStatus").And.Contain("true");
+        renderedUpdate.Should().Contain("updatedDateTime");
 
         capturedToken.Should().Be(CancellationToken.None);
     }
