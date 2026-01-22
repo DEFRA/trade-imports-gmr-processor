@@ -668,4 +668,121 @@ public class GvmsHoldServiceTests
             Times.Once
         );
     }
+
+    [Fact]
+    public async Task PlaceOrReleaseHold_When404ResponseAndFlagEnabled_SilentlyIgnoresAndContinues()
+    {
+        var gmrId = GmrFixtures.GenerateGmrId();
+        var mrns = new List<string> { "mrn1" };
+        var gmr = GmrFixtures.GmrFixture().With(g => g.GmrId, gmrId).Create();
+        var gtoGmr = new GtoGmr
+        {
+            Id = gmrId,
+            Gmr = gmr,
+            HoldStatus = false,
+            UpdatedDateTime = DateTime.UtcNow,
+        };
+        var importTransit = new ImportTransit
+        {
+            Id = "id1",
+            Mrn = "mrn1",
+            TransitOverrideRequired = true,
+        };
+
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(
+                new FeatureOptions
+                {
+                    EnableGvmsApiClientHold = true,
+                    EnableGvmsApiClientIgnoreNotFound = true,
+                    EnableStoreOutboundMessages = true,
+                }
+            );
+        _gtoGmrCollection
+            .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(gtoGmr);
+        _matchedGmrRepository.Setup(r => r.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>())).ReturnsAsync(mrns);
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(mrns, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
+        _gvmsApiClient
+            .Setup(c => c.HoldGmr(gmrId, true, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound));
+        _gtoGmrCollection
+            .Setup(c => c.UpdateHoldStatus(gmrId, true, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _messageAudits
+            .Setup(m => m.BulkWrite(It.IsAny<List<WriteModel<MessageAudit>>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var service = CreateService();
+        var result = await service.PlaceOrReleaseHold(gmrId, CancellationToken.None);
+
+        result.Should().Be(GvmsHoldResult.HoldPlaced);
+        _gtoGmrCollection.Verify(c => c.UpdateHoldStatus(gmrId, true, CancellationToken.None), Times.Once);
+        _messageAudits.Verify(
+            m => m.BulkWrite(It.IsAny<List<WriteModel<MessageAudit>>>(), CancellationToken.None),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task PlaceOrReleaseHold_When404ResponseAndFlagDisabled_ThrowsException()
+    {
+        var gmrId = GmrFixtures.GenerateGmrId();
+        var mrns = new List<string> { "mrn1" };
+        var gmr = GmrFixtures.GmrFixture().With(g => g.GmrId, gmrId).Create();
+        var gtoGmr = new GtoGmr
+        {
+            Id = gmrId,
+            Gmr = gmr,
+            HoldStatus = false,
+            UpdatedDateTime = DateTime.UtcNow,
+        };
+        var importTransit = new ImportTransit
+        {
+            Id = "id1",
+            Mrn = "mrn1",
+            TransitOverrideRequired = true,
+        };
+
+        _featureOptions
+            .Setup(f => f.Value)
+            .Returns(
+                new FeatureOptions
+                {
+                    EnableGvmsApiClientHold = true,
+                    EnableGvmsApiClientIgnoreNotFound = false,
+                    EnableStoreOutboundMessages = true,
+                }
+            );
+        _gtoGmrCollection
+            .Setup(c => c.FindOne(It.IsAny<Expression<Func<GtoGmr, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(gtoGmr);
+        _matchedGmrRepository.Setup(r => r.GetRelatedMrns(gmrId, It.IsAny<CancellationToken>())).ReturnsAsync(mrns);
+        _importTransitRepository
+            .Setup(r => r.GetByMrns(mrns, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
+        _gvmsApiClient
+            .Setup(c => c.HoldGmr(gmrId, true, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound));
+        _messageAudits
+            .Setup(m => m.BulkWrite(It.IsAny<List<WriteModel<MessageAudit>>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var service = CreateService();
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+            await service.PlaceOrReleaseHold(gmrId, CancellationToken.None)
+        );
+
+        _messageAudits.Verify(
+            m => m.BulkWrite(It.IsAny<List<WriteModel<MessageAudit>>>(), CancellationToken.None),
+            Times.Once
+        );
+        _gtoGmrCollection.Verify(
+            c => c.UpdateHoldStatus(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
 }

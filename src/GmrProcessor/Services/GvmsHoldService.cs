@@ -74,6 +74,11 @@ public class GvmsHoldService(
                 gvmsApiClient.HoldGmr(gmrId, anyImportTransitsRequireHold, cancellationToken)
             );
         }
+        catch (HttpRequestException ex)
+            when (ex.StatusCode == System.Net.HttpStatusCode.NotFound && _features.EnableGvmsApiClientIgnoreNotFound)
+        {
+            // Intentionally ignore 404 responses when the feature flag is enabled
+        }
         finally
         {
             await StoreGvmsHold(gmrId, relatedMrns, anyImportTransitsRequireHold, cancellationToken);
