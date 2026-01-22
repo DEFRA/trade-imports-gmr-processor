@@ -1,10 +1,11 @@
 using GmrProcessor.Utils.Mongo;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace GmrProcessor.Data.Gto;
 
-public class GtoGmrCollection(IMongoDbClientFactory database)
+public class GtoGmrCollection(IMongoDbClientFactory database, ILogger<GtoGmrCollection> logger)
     : MongoCollectionSet<GtoGmr>(database, CollectionName),
         IGtoGmrCollection
 {
@@ -65,12 +66,16 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
             }
         );
 
-        return await Collection.FindOneAndUpdateAsync(
+        var result = await Collection.FindOneAndUpdateAsync(
             filter: idFilter,
             update: updatePipeline,
             options: new FindOneAndUpdateOptions<GtoGmr> { IsUpsert = true, ReturnDocument = ReturnDocument.After },
             cancellationToken: cancellationToken
         );
+
+        logger.LogInformation("Created or updated GMR {GmrId} record", gmr.Gmr.GmrId);
+
+        return result;
     }
 
     public async Task UpdateHoldStatus(string gmrId, bool holdStatus, CancellationToken cancellationToken)
@@ -81,5 +86,7 @@ public class GtoGmrCollection(IMongoDbClientFactory database)
             .Set(x => x.UpdatedDateTime, DateTime.UtcNow);
 
         await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+
+        logger.LogInformation("Updated GMR {GmrId} record with hold status {HoldStatus}", gmrId, holdStatus);
     }
 }

@@ -6,13 +6,15 @@ using GmrProcessor.Data.Gto;
 using GmrProcessor.Data.ImportGmrMatching;
 using GmrProcessor.Data.Matching;
 using GmrProcessor.Utils.Mongo;
+using Microsoft.Extensions.Logging;
 
 namespace GmrProcessor.Data;
 
 [ExcludeFromCodeCoverage]
-public class MongoContext(IMongoDbClientFactory database) : IMongoContext
+public class MongoContext(IMongoDbClientFactory database, ILoggerFactory loggerFactory) : IMongoContext
 {
-    public IGtoGmrCollection GtoGmr { get; } = new GtoGmrCollection(database);
+    public IGtoGmrCollection GtoGmr { get; } =
+        new GtoGmrCollection(database, loggerFactory.CreateLogger<GtoGmrCollection>());
     public IMongoCollectionSet<MatchedGmrItem> GtoMatchedGmrItem { get; } = new GtoMatchedItemCollection(database);
     public IEtaGmrCollection EtaGmr { get; } = new EtaGmrCollection(database);
     public IMongoCollectionSet<ImportTransit> ImportTransits { get; } = new MongoCollectionSet<ImportTransit>(database);
