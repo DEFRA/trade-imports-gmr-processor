@@ -3,7 +3,6 @@ using GmrProcessor.Data;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Extensions;
 using GmrProcessor.Utils.Mongo;
-using Microsoft.Extensions.Logging;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using Moq;
@@ -14,7 +13,6 @@ namespace GmrProcessor.Tests.Data;
 public class GtoGmrCollectionTests
 {
     private readonly Mock<IMongoDbClientFactory> _mockMongoDbClientFactory = new();
-    private readonly Mock<ILogger<GtoGmrCollection>> _mockLogger = new();
 
     [Fact]
     public async Task UpdateOrInsert_UpdatesOrInsertsAGtoGmr()
@@ -60,7 +58,7 @@ public class GtoGmrCollectionTests
             .Setup(f => f.GetCollection<GtoGmr>(GtoGmrCollection.CollectionName))
             .Returns(mockCollection.Object);
 
-        var matchedItemCollection = new GtoGmrCollection(_mockMongoDbClientFactory.Object, _mockLogger.Object);
+        var matchedItemCollection = new GtoGmrCollection(_mockMongoDbClientFactory.Object);
 
         await matchedItemCollection.UpdateOrInsert(gtoGmr, CancellationToken.None);
 
@@ -121,7 +119,7 @@ public class GtoGmrCollectionTests
             .Setup(f => f.GetCollection<GtoGmr>(GtoGmrCollection.CollectionName))
             .Returns(mockCollection.Object);
 
-        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object, _mockLogger.Object);
+        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object);
 
         await collection.UpdateOrInsert(gtoGmr, CancellationToken.None);
 
@@ -175,7 +173,7 @@ public class GtoGmrCollectionTests
             .Setup(f => f.GetCollection<GtoGmr>(GtoGmrCollection.CollectionName))
             .Returns(mockCollection.Object);
 
-        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object, _mockLogger.Object);
+        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object);
 
         await collection.UpdateOrInsert(gtoGmr, CancellationToken.None);
 
@@ -224,7 +222,7 @@ public class GtoGmrCollectionTests
             .Setup(f => f.GetCollection<GtoGmr>(GtoGmrCollection.CollectionName))
             .Returns(mockCollection.Object);
 
-        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object, _mockLogger.Object);
+        var collection = new GtoGmrCollection(_mockMongoDbClientFactory.Object);
 
         await collection.UpdateHoldStatus(gmrId, hold, CancellationToken.None);
 
