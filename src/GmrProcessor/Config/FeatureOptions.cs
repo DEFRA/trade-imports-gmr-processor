@@ -22,4 +22,7 @@ public class FeatureOptions
 
     [ConfigurationKeyName("ENABLE_GVMS_API_CLIENT_HOLD")]
     public bool EnableGvmsApiClientHold { get; init; } = false;
+
+    [ConfigurationKeyName("ENABLE_GVMS_API_CLIENT_IGNORE_NOT_FOUND")]
+    public bool EnableGvmsApiClientIgnoreNotFound { get; init; }
 }
