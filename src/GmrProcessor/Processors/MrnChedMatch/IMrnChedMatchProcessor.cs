@@ -1,8 +1,7 @@
 using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
-using Defra.TradeImportsDataApi.Domain.Ipaffs;
 
-namespace GmrProcessor.Processors.Gto;
+namespace GmrProcessor.Processors.MrnChedMatch;
 
 public interface IMrnChedMatchProcessor
 {

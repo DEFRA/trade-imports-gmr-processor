@@ -3,6 +3,7 @@ using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.MrnChedMatch;
 using GmrProcessor.Security;
 using Microsoft.AspNetCore.Mvc;
 

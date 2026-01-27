@@ -391,7 +391,9 @@ public class GvmsHoldServiceTests
                 l.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => state.ToString() == $"Placing GVMS hold on {gmrId}"),
+                    It.Is<It.IsAnyType>(
+                        (state, _) => state.ToString() == $"GvmsHoldService: Placing GVMS hold on {gmrId}"
+                    ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
                 ),
@@ -660,7 +662,9 @@ public class GvmsHoldServiceTests
                     LogLevel.Information,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
-                        (state, _) => state.ToString() == $"GVMS API client is disabled, skipping API call for {gmrId}"
+                        (state, _) =>
+                            state.ToString()
+                            == $"GvmsHoldService: GVMS API client is disabled, skipping API call for {gmrId}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()

@@ -7,6 +7,7 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
 using GmrProcessor.Endpoints;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.MrnChedMatch;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;

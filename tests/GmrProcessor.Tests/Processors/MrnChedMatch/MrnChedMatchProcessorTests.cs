@@ -1,19 +1,17 @@
 using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
-using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
-using GmrProcessor.Data.Matching;
-using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.MrnChedMatch;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
 
-namespace GmrProcessor.Tests.Processors.Gto;
+namespace GmrProcessor.Tests.Processors.MrnChedMatch;
 
 public class MrnChedMatchProcessorTests
 {
     private readonly Mock<IMongoContext> _mockMongoContext = new();
-    private readonly Mock<IMongoCollectionSet<MrnChedMatch>> _mockMrnChedMatches = new();
+    private readonly Mock<IMongoCollectionSet<GmrProcessor.Data.Matching.MrnChedMatch>> _mockMrnChedMatches = new();
     private readonly MrnChedMatchProcessor _processor;
 
     public MrnChedMatchProcessorTests()
@@ -40,11 +38,11 @@ public class MrnChedMatchProcessorTests
         _mockMrnChedMatches
             .Setup(x =>
                 x.FindOne(
-                    It.IsAny<System.Linq.Expressions.Expression<Func<MrnChedMatch, bool>>>(),
+                    It.IsAny<System.Linq.Expressions.Expression<Func<GmrProcessor.Data.Matching.MrnChedMatch, bool>>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync((MrnChedMatch?)null);
+            .ReturnsAsync((GmrProcessor.Data.Matching.MrnChedMatch?)null);
 
         var result = await _processor.ProcessCustomsDeclaration(resourceEvent, CancellationToken.None);
 
@@ -52,8 +50,8 @@ public class MrnChedMatchProcessorTests
         _mockMrnChedMatches.Verify(
             x =>
                 x.ReplaceOne(
-                    It.IsAny<System.Linq.Expressions.Expression<Func<MrnChedMatch, bool>>>(),
-                    It.IsAny<MrnChedMatch>(),
+                    It.IsAny<System.Linq.Expressions.Expression<Func<GmrProcessor.Data.Matching.MrnChedMatch, bool>>>(),
+                    It.IsAny<GmrProcessor.Data.Matching.MrnChedMatch>(),
                     It.Is<ReplaceOptions>(o => o.IsUpsert),
                     It.IsAny<CancellationToken>()
                 ),
@@ -76,7 +74,11 @@ public class MrnChedMatchProcessorTests
 
         Assert.Equal(MrnChedMatchProcessorResult.SkippedNoChedReferences, result);
         _mockMrnChedMatches.Verify(
-            x => x.BulkWrite(It.IsAny<List<WriteModel<MrnChedMatch>>>(), It.IsAny<CancellationToken>()),
+            x =>
+                x.BulkWrite(
+                    It.IsAny<List<WriteModel<GmrProcessor.Data.Matching.MrnChedMatch>>>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -96,7 +98,11 @@ public class MrnChedMatchProcessorTests
 
         Assert.Equal(MrnChedMatchProcessorResult.SkippedNoChedReferences, result);
         _mockMrnChedMatches.Verify(
-            x => x.BulkWrite(It.IsAny<List<WriteModel<MrnChedMatch>>>(), It.IsAny<CancellationToken>()),
+            x =>
+                x.BulkWrite(
+                    It.IsAny<List<WriteModel<GmrProcessor.Data.Matching.MrnChedMatch>>>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -121,7 +127,11 @@ public class MrnChedMatchProcessorTests
 
         Assert.Equal(MrnChedMatchProcessorResult.SkippedInvalidMrn, result);
         _mockMrnChedMatches.Verify(
-            x => x.BulkWrite(It.IsAny<List<WriteModel<MrnChedMatch>>>(), It.IsAny<CancellationToken>()),
+            x =>
+                x.BulkWrite(
+                    It.IsAny<List<WriteModel<GmrProcessor.Data.Matching.MrnChedMatch>>>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -149,11 +159,11 @@ public class MrnChedMatchProcessorTests
         _mockMrnChedMatches
             .Setup(x =>
                 x.FindOne(
-                    It.IsAny<System.Linq.Expressions.Expression<Func<MrnChedMatch, bool>>>(),
+                    It.IsAny<System.Linq.Expressions.Expression<Func<GmrProcessor.Data.Matching.MrnChedMatch, bool>>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync((MrnChedMatch?)null);
+            .ReturnsAsync((GmrProcessor.Data.Matching.MrnChedMatch?)null);
 
         var result = await _processor.ProcessCustomsDeclaration(resourceEvent, CancellationToken.None);
 
@@ -161,8 +171,8 @@ public class MrnChedMatchProcessorTests
         _mockMrnChedMatches.Verify(
             x =>
                 x.ReplaceOne(
-                    It.IsAny<System.Linq.Expressions.Expression<Func<MrnChedMatch, bool>>>(),
-                    It.IsAny<MrnChedMatch>(),
+                    It.IsAny<System.Linq.Expressions.Expression<Func<GmrProcessor.Data.Matching.MrnChedMatch, bool>>>(),
+                    It.IsAny<GmrProcessor.Data.Matching.MrnChedMatch>(),
                     It.Is<ReplaceOptions>(o => o.IsUpsert),
                     It.IsAny<CancellationToken>()
                 ),

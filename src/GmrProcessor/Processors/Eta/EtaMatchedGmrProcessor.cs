@@ -7,6 +7,7 @@ using GmrProcessor.Data;
 using GmrProcessor.Data.Eta;
 using GmrProcessor.Domain.Eta;
 using GmrProcessor.Extensions;
+using GmrProcessor.Logging;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Options;
 
@@ -22,27 +23,32 @@ public class EtaMatchedGmrProcessor(
 {
     private const string StateEmbarked = "EMBARKED";
     private readonly TradeImportsServiceBusOptions _serviceBusOptions = serviceBusOptions.Value;
+    private readonly ILogger<EtaMatchedGmrProcessor> _logger = new PrefixedLogger<EtaMatchedGmrProcessor>(
+        logger,
+        "ETA"
+    );
 
     public async Task<EtaMatchedGmrProcessorResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
         if (!IsEmbarked(matchedGmr))
         {
-            logger.LogInformation(
-                "Skipping GMR {GmrId} because status {Status} is not {StateEmbarked}",
+            _logger.LogInformation(
+                "Skipping GMR {GmrId}, MRN {Mrn} because status {Status} is not {StateEmbarked}",
                 matchedGmr.Gmr.GmrId,
+                matchedGmr.Mrn,
                 matchedGmr.Gmr.State,
                 StateEmbarked
             );
             return EtaMatchedGmrProcessorResult.SkippedNotEmbarked;
         }
 
-        logger.LogInformation("Processing ETA for GMR {GmrId}", matchedGmr.Gmr.GmrId);
+        _logger.LogInformation("Processing ETA for GMR {GmrId}, MRN {Mrn}", matchedGmr.Gmr.GmrId, matchedGmr.Mrn);
 
         var oldEtaGmrRecord = await etaGmrCollection.UpdateOrInsert(BuildGtoGmr(matchedGmr.Gmr), cancellationToken);
         if (!HasUpdatedCheckedInTime(matchedGmr.Gmr, oldEtaGmrRecord?.Gmr))
         {
-            logger.LogInformation(
-                "Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {GmrId}, Mrn: {Mrn}, UpdatedTime: {UpdatedTime}",
+            _logger.LogInformation(
+                "Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {GmrId}, MRN: {Mrn}, UpdatedTime: {UpdatedTime}",
                 matchedGmr.Gmr.GmrId,
                 matchedGmr.Mrn,
                 matchedGmr.Gmr.UpdatedDateTime
@@ -55,15 +61,20 @@ public class EtaMatchedGmrProcessor(
 
         if (allCheds.Count == 0)
         {
-            logger.LogInformation("Skipping GMR {GmrId} because no CHEDs were found", matchedGmr.Gmr.GmrId);
+            _logger.LogInformation(
+                "Skipping GMR {GmrId}, MRN {Mrn} because no CHEDs were found",
+                matchedGmr.Gmr.GmrId,
+                matchedGmr.Mrn
+            );
             return EtaMatchedGmrProcessorResult.NoChedsFound;
         }
 
-        logger.LogInformation(
-            "Informing Ipaffs of {Action} for CHEDs {ChedReferences} for GMR {GmrId} with ETA {Eta}",
+        _logger.LogInformation(
+            "Informing Ipaffs of {Action} for CHEDs {ChedReferences} for GMR {GmrId}, MRN {Mrn} with ETA {Eta}",
             oldEtaGmrRecord is null ? "new arrival time" : "update to arrival time",
             string.Join(",", allCheds),
             matchedGmr.Gmr.GmrId,
+            matchedGmr.Mrn,
             matchedGmr.Gmr.CheckedInCrossing?.LocalDateTimeOfArrival
         );
 

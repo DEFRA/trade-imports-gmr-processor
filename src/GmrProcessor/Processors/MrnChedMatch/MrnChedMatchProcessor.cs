@@ -1,16 +1,20 @@
 using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
-using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
-using GmrProcessor.Data.Matching;
+using GmrProcessor.Logging;
 using GmrProcessor.Utils;
 using MongoDB.Driver;
 
-namespace GmrProcessor.Processors.Gto;
+namespace GmrProcessor.Processors.MrnChedMatch;
 
 public class MrnChedMatchProcessor(IMongoContext mongoContext, ILogger<MrnChedMatchProcessor> logger)
     : IMrnChedMatchProcessor
 {
+    private readonly ILogger<MrnChedMatchProcessor> _logger = new PrefixedLogger<MrnChedMatchProcessor>(
+        logger,
+        "MrnChedMatch"
+    );
+
     public async Task<MrnChedMatchProcessorResult> ProcessCustomsDeclaration(
         ResourceEvent<CustomsDeclaration> customsDeclarationEvent,
         CancellationToken cancellationToken
@@ -21,7 +25,7 @@ public class MrnChedMatchProcessor(IMongoContext mongoContext, ILogger<MrnChedMa
 
         if (!MrnRegex.Value().IsMatch(mrn))
         {
-            logger.LogWarning("CustomsDeclaration has invalid MRN format: {Mrn}, skipping", mrn);
+            _logger.LogWarning("CustomsDeclaration has invalid MRN format: {Mrn}, skipping", mrn);
             return MrnChedMatchProcessorResult.SkippedInvalidMrn;
         }
 
@@ -34,13 +38,13 @@ public class MrnChedMatchProcessor(IMongoContext mongoContext, ILogger<MrnChedMa
 
         if (chedReferences.Count == 0)
         {
-            logger.LogInformation("CustomsDeclaration {Mrn} has no CHED references, skipping", mrn);
+            _logger.LogInformation("CustomsDeclaration {Mrn} has no CHED references, skipping", mrn);
             return MrnChedMatchProcessorResult.SkippedNoChedReferences;
         }
 
         var existingMatch = await mongoContext.MrnChedMatches.FindOne(m => m.Id == mrn, cancellationToken);
 
-        var match = new MrnChedMatch
+        var match = new Data.Matching.MrnChedMatch
         {
             Id = mrn,
             ChedReferences = chedReferences,
@@ -55,7 +59,7 @@ public class MrnChedMatchProcessor(IMongoContext mongoContext, ILogger<MrnChedMa
             cancellationToken
         );
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "Processed CustomsDeclaration {Mrn} with {Count} CHED references: {ChedReferences}",
             mrn,
             chedReferences.Count,

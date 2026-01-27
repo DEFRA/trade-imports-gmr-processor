@@ -1,4 +1,4 @@
-namespace GmrProcessor.Processors.Gto;
+namespace GmrProcessor.Processors.MrnChedMatch;
 
 public enum MrnChedMatchProcessorResult
 {

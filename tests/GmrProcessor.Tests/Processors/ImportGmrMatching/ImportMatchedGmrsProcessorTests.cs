@@ -148,7 +148,8 @@ public class ImportMatchedGmrsProcessorTests
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
                         (state, _) =>
-                            state.ToString() == $"Skipping {matchedGmr.Mrn} because no related imports have been found"
+                            state.ToString()
+                            == $"ImportGmrMatching: Skipping {matchedGmr.Mrn} because no related imports have been found"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -220,7 +221,8 @@ public class ImportMatchedGmrsProcessorTests
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
                         (state, _) =>
-                            state.ToString() == $"Received matched GMR {matchedGmr.Gmr.GmrId}, but no updates to send"
+                            state.ToString()
+                            == $"ImportGmrMatching: Received matched GMR {matchedGmr.Gmr.GmrId}, but no updates to send"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -262,7 +264,7 @@ public class ImportMatchedGmrsProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Received matched GMR {matchedGmr.Gmr.GmrId}, updating Ipaffs with Mrns: {importRef},{transitId}"
+                            == $"ImportGmrMatching: Received matched GMR {matchedGmr.Gmr.GmrId}, updating Ipaffs with Mrns: {importRef},{transitId}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
