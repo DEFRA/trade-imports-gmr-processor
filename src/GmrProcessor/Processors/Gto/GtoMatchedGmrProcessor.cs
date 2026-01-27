@@ -2,6 +2,7 @@ using Defra.TradeImportsGmrFinder.Domain.Events;
 using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Extensions;
+using GmrProcessor.Logging;
 using GmrProcessor.Services;
 
 namespace GmrProcessor.Processors.Gto;
@@ -14,19 +15,24 @@ public class GtoMatchedGmrProcessor(
     IGvmsHoldService gvmsHoldService
 ) : IGtoMatchedGmrProcessor
 {
+    private readonly ILogger<GtoMatchedGmrProcessor> _logger = new PrefixedLogger<GtoMatchedGmrProcessor>(
+        logger,
+        "GTO"
+    );
+
     public async Task<GtoMatchedGmrProcessorResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
         var importTransit = await gtoImportTransitCollection.GetByMrn(matchedGmr.Mrn!, cancellationToken);
         if (importTransit is null)
         {
-            logger.LogInformation("Skipping {Mrn} because no import transit was found", matchedGmr.Mrn);
+            _logger.LogInformation("Skipping {Mrn} because no import transit was found", matchedGmr.Mrn);
             return GtoMatchedGmrProcessorResult.SkippedNoTransit;
         }
 
         var gtoGmr = await gtoGmrCollection.UpdateOrInsert(BuildGtoGmr(matchedGmr.Gmr), cancellationToken);
         if (gtoGmr.UpdatedDateTime != matchedGmr.Gmr.GetUpdatedDateTime())
         {
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Skipping {Mrn} because it is an old GTO GMR item, Gmr: {GmrId}, UpdatedTime: {UpdatedTime}",
                 matchedGmr.Mrn,
                 matchedGmr.Gmr.GmrId,
@@ -35,7 +41,7 @@ public class GtoMatchedGmrProcessor(
             return GtoMatchedGmrProcessorResult.SkippedOldGmr;
         }
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "Matched GMR item inserted/updated, Mrn: {Mrn}, Gmr: {GmrId}, UpdatedTime: {UpdatedTime}",
             matchedGmr.Mrn,
             matchedGmr.Gmr.GmrId,

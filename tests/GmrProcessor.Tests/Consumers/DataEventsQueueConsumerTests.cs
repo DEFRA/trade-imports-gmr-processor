@@ -10,6 +10,7 @@ using GmrProcessor.Consumers;
 using GmrProcessor.Extensions;
 using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
+using GmrProcessor.Processors.MrnChedMatch;
 using GmrProcessor.Tests.Metrics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

@@ -3,6 +3,7 @@ using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Gto;
+using GmrProcessor.Logging;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;
 using MongoDB.Driver;
@@ -16,6 +17,9 @@ public class GtoImportPreNotificationProcessor(
     IGvmsHoldService gvmsHoldService
 ) : IGtoImportPreNotificationProcessor
 {
+    private readonly ILogger<GtoImportPreNotificationProcessor> _logger =
+        new PrefixedLogger<GtoImportPreNotificationProcessor>(logger, "GTO");
+
     public async Task<GtoImportNotificationProcessorResult> Process(
         ResourceEvent<ImportPreNotification> importPreNotificationEvent,
         CancellationToken cancellationToken
@@ -28,7 +32,7 @@ public class GtoImportPreNotificationProcessor(
 
         if (!importTransitResult.IsTransit)
         {
-            logger.LogInformation("CHED {ChedId} is not a transit, skipping", reference);
+            _logger.LogInformation("CHED {ChedId} is not a transit, skipping", reference);
             return GtoImportNotificationProcessorResult.SkippedNotATransit;
         }
 
@@ -47,14 +51,14 @@ public class GtoImportPreNotificationProcessor(
 
         await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);
 
-        logger.LogInformation("Inserted or updated ImportTransit {Id}", reference);
+        _logger.LogInformation("Inserted or updated ImportTransit {Id}", reference);
 
         var mrn = importTransitResult.Mrn!;
 
         var matchedGmr = await matchedGmrCollection.GetByMrn(mrn, cancellationToken);
         if (matchedGmr is null)
         {
-            logger.LogInformation("Tried to place or release hold on MRN {Mrn} but no MatchedGmr exists", mrn);
+            _logger.LogInformation("Tried to place or release hold on MRN {Mrn} but no MatchedGmr exists", mrn);
             return GtoImportNotificationProcessorResult.NoMatchedGmrExists;
         }
 

@@ -5,6 +5,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Auditing;
 using GmrProcessor.Data.Gto;
+using GmrProcessor.Logging;
 using GmrProcessor.Metrics;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -24,13 +25,14 @@ public class GvmsHoldService(
 ) : IGvmsHoldService
 {
     private readonly FeatureOptions _features = features.Value;
+    private readonly ILogger _logger = new PrefixedLogger<GvmsHoldService>(logger, "GvmsHoldService");
 
     public async Task<GvmsHoldResult> PlaceOrReleaseHold(string gmrId, CancellationToken cancellationToken)
     {
         var gmr = await gtoGmrCollection.FindOne(g => g.Gmr.GmrId == gmrId, cancellationToken);
         if (gmr == null)
         {
-            logger.LogWarning("Tried to place or release a hold on {GmrId} which was not found", gmrId);
+            _logger.LogWarning("Tried to place or release a hold on {GmrId} which was not found", gmrId);
             return GvmsHoldResult.NoHoldChange;
         }
 
@@ -39,7 +41,7 @@ public class GvmsHoldService(
 
         if (relatedImportTransits.Count == 0)
         {
-            logger.LogInformation("No related import transits were found for {GmrId}, taking no action", gmrId);
+            _logger.LogInformation("No related import transits were found for {GmrId}, taking no action", gmrId);
             return GvmsHoldResult.NoHoldChange;
         }
 
@@ -47,7 +49,7 @@ public class GvmsHoldService(
 
         if (gmr.HoldStatus == anyImportTransitsRequireHold)
         {
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Matched GMR {GmrId} is already {State}, no action was taken",
                 gmrId,
                 gmr.HoldStatus == true ? "on hold" : "released"
@@ -55,7 +57,7 @@ public class GvmsHoldService(
             return GvmsHoldResult.NoHoldChange;
         }
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "{Action} GVMS hold on {GmrId}",
             anyImportTransitsRequireHold ? "Placing" : "Releasing",
             gmrId
@@ -63,7 +65,7 @@ public class GvmsHoldService(
 
         if (!_features.EnableGvmsApiClientHold)
         {
-            logger.LogInformation("GVMS API client is disabled, skipping API call for {GmrId}", gmrId);
+            _logger.LogInformation("GVMS API client is disabled, skipping API call for {GmrId}", gmrId);
             return GvmsHoldResult.NoHoldChange;
         }
 
@@ -123,7 +125,7 @@ public class GvmsHoldService(
             WriteModel<MessageAudit> bulkOp = new InsertOneModel<MessageAudit>(messageAudit);
 
             await mongo.MessageAudits.BulkWrite([bulkOp], cancellationToken);
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Stored GVMS hold request to MongoDB: GMR {GmrId}, Hold {HoldStatus}",
                 gmrId,
                 holdStatus
@@ -131,7 +133,7 @@ public class GvmsHoldService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to store GVMS hold request to MongoDB for GMR {GmrId}", gmrId);
+            _logger.LogError(ex, "Failed to store GVMS hold request to MongoDB for GMR {GmrId}", gmrId);
         }
     }
 }

@@ -79,7 +79,7 @@ public class EtaMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Skipping GMR {matched.Gmr.GmrId} because status {matched.Gmr.State} is not EMBARKED"
+                            == $"ETA: Skipping GMR {matched.Gmr.GmrId}, MRN {matched.Mrn} because status {matched.Gmr.State} is not EMBARKED"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -145,7 +145,7 @@ public class EtaMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {matched.Gmr.GmrId}, Mrn: {matched.Mrn}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
+                            == $"ETA: Skipping an old/unchanged CheckedInTime ETA GMR item, Gmr: {matched.Gmr.GmrId}, MRN: {matched.Mrn}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -203,7 +203,8 @@ public class EtaMatchedGmrProcessorTests
                     LogLevel.Information,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
-                        (state, _) => state.ToString() == $"Processing ETA for GMR {matched.Gmr.GmrId}"
+                        (state, _) =>
+                            state.ToString() == $"ETA: Processing ETA for GMR {matched.Gmr.GmrId}, MRN {matched.Mrn}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -279,7 +280,8 @@ public class EtaMatchedGmrProcessorTests
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
                         (state, _) =>
-                            state.ToString() == $"Skipping GMR {matched.Gmr.GmrId} because no CHEDs were found"
+                            state.ToString()
+                            == $"ETA: Skipping GMR {matched.Gmr.GmrId}, MRN {matched.Mrn} because no CHEDs were found"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -356,8 +358,8 @@ public class EtaMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Informing Ipaffs of update to arrival time for CHEDs {importRef} for GMR"
-                                + $" {matched.Gmr.GmrId} with ETA {matched.Gmr.CheckedInCrossing!.LocalDateTimeOfArrival}"
+                            == $"ETA: Informing Ipaffs of update to arrival time for CHEDs {importRef} for GMR"
+                                + $" {matched.Gmr.GmrId}, MRN {matched.Mrn} with ETA {matched.Gmr.CheckedInCrossing!.LocalDateTimeOfArrival}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()

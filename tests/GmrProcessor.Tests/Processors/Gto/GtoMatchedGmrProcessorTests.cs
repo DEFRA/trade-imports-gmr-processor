@@ -65,7 +65,8 @@ public class GtoMatchedGmrProcessorTests
                     LogLevel.Information,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
-                        (state, _) => state.ToString() == $"Skipping {matched.Mrn} because no import transit was found"
+                        (state, _) =>
+                            state.ToString() == $"GTO: Skipping {matched.Mrn} because no import transit was found"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -173,7 +174,7 @@ public class GtoMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Skipping {matched.Mrn} because it is an old GTO GMR item, Gmr: {matched.Gmr.GmrId}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
+                            == $"GTO: Skipping {matched.Mrn} because it is an old GTO GMR item, Gmr: {matched.Gmr.GmrId}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -214,7 +215,7 @@ public class GtoMatchedGmrProcessorTests
                     It.Is<It.IsAnyType>(
                         (state, _) =>
                             state.ToString()
-                            == $"Matched GMR item inserted/updated, Mrn: {matched.Mrn}, Gmr: {matched.Gmr.GmrId}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
+                            == $"GTO: Matched GMR item inserted/updated, Mrn: {matched.Mrn}, Gmr: {matched.Gmr.GmrId}, UpdatedTime: {matched.Gmr.UpdatedDateTime}"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()

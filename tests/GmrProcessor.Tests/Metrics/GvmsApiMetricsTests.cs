@@ -105,7 +105,7 @@ public class GvmsApiMetricsTests
     {
         const string endpoint = "Hold";
 
-        await _gvmsApiMetrics.RecordRequest(endpoint, Task.Delay(10, TestContext.Current.CancellationToken));
+        await _gvmsApiMetrics.RecordRequest(endpoint, Task.Delay(20, TestContext.Current.CancellationToken));
 
         _measurements.Should().HaveCount(1);
         _measurements[0].Value.Should().BeGreaterThanOrEqualTo(10);

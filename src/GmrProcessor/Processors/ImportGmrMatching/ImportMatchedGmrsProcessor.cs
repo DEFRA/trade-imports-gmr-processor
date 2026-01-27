@@ -3,6 +3,7 @@ using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Common;
 using GmrProcessor.Data.ImportGmrMatching;
+using GmrProcessor.Logging;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,11 @@ public class ImportMatchedGmrsProcessor(
     ILogger<ImportMatchedGmrsProcessor> logger
 ) : IImportMatchedGmrsProcessor
 {
+    private readonly ILogger<ImportMatchedGmrsProcessor> _logger = new PrefixedLogger<ImportMatchedGmrsProcessor>(
+        logger,
+        "ImportGmrMatching"
+    );
+
     public async Task<ImportMatchedGmrsProcessorResult> Process(
         MatchedGmr matchedGmr,
         CancellationToken cancellationToken
@@ -28,7 +34,7 @@ public class ImportMatchedGmrsProcessor(
 
         if (relatedImports.Count == 0)
         {
-            logger.LogInformation("Skipping {Mrn} because no related imports have been found", matchedGmr.Mrn);
+            _logger.LogInformation("Skipping {Mrn} because no related imports have been found", matchedGmr.Mrn);
             return ImportMatchedGmrsProcessorResult.NoRelatedImportsFound;
         }
 
@@ -62,11 +68,11 @@ public class ImportMatchedGmrsProcessor(
 
         if (bulkOperations.Count == 0)
         {
-            logger.LogInformation("Received matched GMR {GmrId}, but no updates to send", matchedGmr.Gmr.GmrId);
+            _logger.LogInformation("Received matched GMR {GmrId}, but no updates to send", matchedGmr.Gmr.GmrId);
             return ImportMatchedGmrsProcessorResult.NoUpdatesFound;
         }
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "Received matched GMR {GmrId}, updating Ipaffs with Mrns: {Mrns}",
             matchedGmr.Gmr.GmrId,
             string.Join(",", enumerable.ToList())

@@ -30,7 +30,12 @@ public abstract class MatchedGmrsQueueConsumer<TConsumer, T>(
             throw new JsonException("Unable to deserialise MatchedGmr message");
         }
 
-        _logger.LogInformation("Received matched GMR: {Identifier}", matchedGmr.GetIdentifier);
+        _logger.LogInformation(
+            "{Consumer} received matched GMR {Gmr} to Mrn {Mrn}",
+            typeof(TConsumer).Name,
+            matchedGmr.Gmr,
+            matchedGmr.Mrn
+        );
 
         await processor.Process(matchedGmr, stoppingToken);
     }
