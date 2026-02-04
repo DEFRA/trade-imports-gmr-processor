@@ -19,7 +19,7 @@ public class EtaMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFixtur
     public async Task WhenMatchedGmrReceived_AnEtaIsSentToIpaffs()
     {
         var serviceBusOptions = GetConfig<TradeImportsServiceBusOptions>();
-        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.EtaQueueName);
+        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.Eta.QueueName);
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();

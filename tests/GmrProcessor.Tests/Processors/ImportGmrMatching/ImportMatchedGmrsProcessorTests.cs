@@ -37,9 +37,12 @@ public class ImportMatchedGmrsProcessorTests
             Options.Create(
                 new TradeImportsServiceBusOptions
                 {
-                    ConnectionString = "",
-                    EtaQueueName = "EtaQueueName",
-                    ImportMatchResultQueueName = "ImportMatchResultQueueName",
+                    Eta = new ServiceBusQueue { ConnectionString = "", QueueName = "EtaQueueName" },
+                    ImportMatchResult = new ServiceBusQueue
+                    {
+                        ConnectionString = "",
+                        QueueName = "ImportMatchResultQueueName",
+                    },
                 }
             ),
             _logger.Object

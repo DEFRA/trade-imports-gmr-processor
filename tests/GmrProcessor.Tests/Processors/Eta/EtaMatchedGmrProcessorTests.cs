@@ -26,9 +26,12 @@ public class EtaMatchedGmrProcessorTests
     private readonly IOptions<TradeImportsServiceBusOptions> _serviceBusOptions = Options.Create(
         new TradeImportsServiceBusOptions
         {
-            ConnectionString = "Endpoint=sb://localhost/",
-            EtaQueueName = "EtaQueueName",
-            ImportMatchResultQueueName = "ImportMatchResultQueueName",
+            Eta = new ServiceBusQueue { ConnectionString = "Endpoint=sb://localhost/", QueueName = "EtaQueueName" },
+            ImportMatchResult = new ServiceBusQueue
+            {
+                ConnectionString = "Endpoint=sb://localhost/",
+                QueueName = "ImportMatchResultQueueName",
+            },
         }
     );
     private readonly EtaMatchedGmrProcessor _processor;

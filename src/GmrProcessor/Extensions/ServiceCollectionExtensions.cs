@@ -6,11 +6,9 @@ using Amazon.SQS;
 using Azure.Messaging.ServiceBus;
 using Defra.TradeImportsGmrFinder.GvmsClient.Client;
 using GmrProcessor.Config;
-using GmrProcessor.Metrics;
 using GmrProcessor.Services;
 using GmrProcessor.Utils.Http;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
 
@@ -67,32 +65,28 @@ public static class ServiceCollectionExtensions
     {
         services.AddAzureClients(azureBuilder =>
         {
-            var serviceBusClientBuilder = azureBuilder.AddServiceBusClient(
-                tradeImportsServiceBusOptions.ConnectionString
-            );
-            serviceBusClientBuilder.ConfigureOptions(
-                (options, provider) =>
-                {
-                    if (!provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
-                        return;
-
-                    options.TransportType = ServiceBusTransportType.AmqpWebSockets;
-                    options.WebProxy = provider.GetRequiredService<IWebProxy>();
-                }
-            );
-
-            string[] queueNames =
+            ServiceBusQueue[] queues =
             [
-                tradeImportsServiceBusOptions.EtaQueueName,
-                tradeImportsServiceBusOptions.ImportMatchResultQueueName,
+                tradeImportsServiceBusOptions.Eta,
+                tradeImportsServiceBusOptions.ImportMatchResult,
             ];
-            foreach (var queueName in queueNames)
+            foreach (var queue in queues)
             {
                 azureBuilder
                     .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                        (_, _, provider) => provider.GetRequiredService<ServiceBusClient>().CreateSender(queueName)!
+                        (options, _, provider) =>
+                        {
+                            if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+                            {
+                                options.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                                options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                            }
+
+                            var client = new ServiceBusClient(queue.ConnectionString, options);
+                            return client.CreateSender(queue.QueueName);
+                        }
                     )
-                    .WithName(queueName);
+                    .WithName(queue.QueueName);
             }
         });
         return services;

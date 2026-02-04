@@ -22,7 +22,7 @@ public class EtaMatchedGmrProcessor(
 ) : IEtaMatchedGmrProcessor
 {
     private const string StateEmbarked = "EMBARKED";
-    private readonly TradeImportsServiceBusOptions _serviceBusOptions = serviceBusOptions.Value;
+    private readonly ServiceBusQueue _etaQueueOptions = serviceBusOptions.Value.Eta;
     private readonly ILogger<EtaMatchedGmrProcessor> _logger = new PrefixedLogger<EtaMatchedGmrProcessor>(
         logger,
         "ETA"
@@ -85,11 +85,7 @@ public class EtaMatchedGmrProcessor(
             ReferenceNumber = chedRef,
         });
 
-        await tradeImportsServiceBus.SendMessagesAsync(
-            ipaffsMessages,
-            _serviceBusOptions.EtaQueueName,
-            cancellationToken
-        );
+        await tradeImportsServiceBus.SendMessagesAsync(ipaffsMessages, _etaQueueOptions.QueueName, cancellationToken);
 
         return EtaMatchedGmrProcessorResult.UpdatedIpaffs;
     }
