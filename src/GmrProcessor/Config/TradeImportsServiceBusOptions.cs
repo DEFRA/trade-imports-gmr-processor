@@ -6,8 +6,13 @@ namespace GmrProcessor.Config;
 public class TradeImportsServiceBusOptions
 {
     public const string SectionName = "TradeImportsServiceBus";
+    public required ServiceBusQueue Eta { get; init; }
+    public required ServiceBusQueue ImportMatchResult { get; init; }
+}
 
+[ExcludeFromCodeCoverage]
+public class ServiceBusQueue
+{
     public required string ConnectionString { get; init; }
-    public required string EtaQueueName { get; init; }
-    public required string ImportMatchResultQueueName { get; init; }
+    public required string QueueName { get; init; }
 }

@@ -19,6 +19,7 @@ public class ImportMatchedGmrsProcessor(
     ILogger<ImportMatchedGmrsProcessor> logger
 ) : IImportMatchedGmrsProcessor
 {
+    private readonly ServiceBusQueue _importMatchQueueOptions = serviceBusOptions.Value.ImportMatchResult;
     private readonly ILogger<ImportMatchedGmrsProcessor> _logger = new PrefixedLogger<ImportMatchedGmrsProcessor>(
         logger,
         "ImportGmrMatching"
@@ -79,11 +80,7 @@ public class ImportMatchedGmrsProcessor(
         );
 
         var messages = enumerable.Select(um => new ImportMatchMessage { ImportReference = um, Match = true });
-        await tradeImportsServiceBus.SendMessagesAsync(
-            messages,
-            serviceBusOptions.Value.ImportMatchResultQueueName,
-            cancellationToken
-        );
+        await tradeImportsServiceBus.SendMessagesAsync(messages, _importMatchQueueOptions.QueueName, cancellationToken);
         await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
 
         return ImportMatchedGmrsProcessorResult.UpdatedIpaffs;

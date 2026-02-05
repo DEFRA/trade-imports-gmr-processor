@@ -45,22 +45,23 @@ base environment configuration, adding the relevant environment variables from `
 
 Configuration is provided via `appsettings*.json` and overridden by environment variables. Key settings:
 
-| Environment Variable                                 | Purpose                                                 |
-|------------------------------------------------------|---------------------------------------------------------|
-| `Mongo__DatabaseUri`                                 | Mongo connection string                                 |
-| `Mongo__DatabaseName`                                | Mongo database name                                     |
-| `EtaMatchedGmrsQueueConsumer__QueueName`             | SQS queue containing Matched GMRs for ETA               |
-| `GtoDataEventsQueueConsumer__QueueName`              | SQS queue containing Data API Events for GTO            |
-| `GtoMatchedGmrsQueueConsumer__QueueName`             | SQS queue containing Matched GMRs for GTO               |
-| `ImportMatchedGmrsQueueConsumer__QueueName`          | SQS queue containing Matched GMRs for ImportMatchedGMRs |
-| `GvmsApi__BaseUri`                                   | GVMS API base URL                                       |
-| `GvmsApi__ClientId`                                  | GVMS API Authentication Client ID                       |
-| `GvmsApi__ClientSecret`                              | GVMS API Authentication Client Secret                   |
-| `DataApi__BaseAddress`                               | Trade Imports Data API base URL                         |
-| `DataApi__Username` / `DataApi__Password`            | Basic auth for Data API                                 |
-| `TradeImportsServiceBus__ConnectionString`           | Azure Service Bus connection string                     |
-| `TradeImportsServiceBus__EtaQueueName`               | Service Bus queue for ETA updates                       |
-| `TradeImportsServiceBus__ImportMatchResultQueueName` | Service Bus queue for Import Match results              |
+| Environment Variable                                          | Purpose                                                      |
+|---------------------------------------------------------------|--------------------------------------------------------------|
+| `Mongo__DatabaseUri`                                          | Mongo connection string                                      |
+| `Mongo__DatabaseName`                                         | Mongo database name                                          |
+| `EtaMatchedGmrsQueueConsumer__QueueName`                      | SQS queue containing Matched GMRs for ETA                    |
+| `GtoDataEventsQueueConsumer__QueueName`                       | SQS queue containing Data API Events for GTO                 |
+| `GtoMatchedGmrsQueueConsumer__QueueName`                      | SQS queue containing Matched GMRs for GTO                    |
+| `ImportMatchedGmrsQueueConsumer__QueueName`                   | SQS queue containing Matched GMRs for ImportMatchedGMRs      |
+| `GvmsApi__BaseUri`                                            | GVMS API base URL                                            |
+| `GvmsApi__ClientId`                                           | GVMS API Authentication Client ID                            |
+| `GvmsApi__ClientSecret`                                       | GVMS API Authentication Client Secret                        |
+| `DataApi__BaseAddress`                                        | Trade Imports Data API base URL                              |
+| `DataApi__Username` / `DataApi__Password`                     | Basic auth for Data API                                      |
+| `TradeImportsServiceBus__Eta__ConnectionString`               | Azure Service Bus connection string for ETA updates          |
+| `TradeImportsServiceBus__Eta__QueueName`                      | Service Bus queue for ETA updates                            |
+| `TradeImportsServiceBus__ImportMatchResult__ConnectionString` | Azure Service Bus connection string for Import Match results |
+| `TradeImportsServiceBus__ImportMatchResult__QueueName`        | Service Bus queue for Import Match results                   |
 
 ## Feature Flags
 

@@ -33,10 +33,12 @@ public class ServiceCollectionExtensionsTradeImportsMessagingTests
                 new Dictionary<string, string?>
                 {
                     ["ENABLE_TRADE_IMPORTS_MESSAGING"] = "true",
-                    ["TradeImportsServiceBus:ConnectionString"] =
+                    ["TradeImportsServiceBus:Eta:ConnectionString"] =
                         "Endpoint=sb://localhost/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE",
-                    ["TradeImportsServiceBus:EtaQueueName"] = "eta-queue",
-                    ["TradeImportsServiceBus:ImportMatchResultQueueName"] = "import-match-result-queue",
+                    ["TradeImportsServiceBus:Eta:QueueName"] = "eta-queue",
+                    ["TradeImportsServiceBus:ImportMatchResult:ConnectionString"] =
+                        "Endpoint=sb://localhost/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE",
+                    ["TradeImportsServiceBus:ImportMatchResult:QueueName"] = "import-match-result-queue",
                 }
             )
             .Build();

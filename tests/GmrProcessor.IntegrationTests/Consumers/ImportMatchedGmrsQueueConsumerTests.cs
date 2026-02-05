@@ -20,7 +20,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromImports()
     {
         var serviceBusOptions = GetConfig<TradeImportsServiceBusOptions>();
-        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
+        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResult.QueueName);
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
@@ -89,7 +89,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
     public async Task WhenMatchedGmrReceived_MatchIsCreatedFromTransits()
     {
         var serviceBusOptions = GetConfig<TradeImportsServiceBusOptions>();
-        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResultQueueName);
+        var serviceBusClient = serviceBusFixture.GetClient(serviceBusOptions.ImportMatchResult.QueueName);
         await serviceBusClient.PurgeAsync(TestContext.Current.CancellationToken);
 
         var expectedMrn = CustomsDeclarationFixtures.GenerateMrn();
