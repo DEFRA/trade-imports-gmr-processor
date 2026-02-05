@@ -73,16 +73,25 @@ public static class ServiceCollectionExtensions
             foreach (var queue in queues)
             {
                 azureBuilder
-                    .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                        (options, _, provider) =>
+                    .AddServiceBusClient(queue.ConnectionString)
+                    .WithName(queue.QueueName)
+                    .ConfigureOptions(
+                        (options, provider) =>
                         {
                             if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
                             {
                                 options.TransportType = ServiceBusTransportType.AmqpWebSockets;
                                 options.WebProxy = provider.GetRequiredService<IWebProxy>();
                             }
+                        }
+                    );
 
-                            var client = new ServiceBusClient(queue.ConnectionString, options);
+                azureBuilder
+                    .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                        (_, _, provider) =>
+                        {
+                            var clientFactory = provider.GetRequiredService<IAzureClientFactory<ServiceBusClient>>();
+                            var client = clientFactory.CreateClient(queue.QueueName);
                             return client.CreateSender(queue.QueueName);
                         }
                     )
