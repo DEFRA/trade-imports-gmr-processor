@@ -30,13 +30,25 @@ public abstract class MatchedGmrsQueueConsumer<TConsumer, T>(
             throw new JsonException("Unable to deserialise MatchedGmr message");
         }
 
-        _logger.LogInformation(
-            "{Consumer} received matched GMR {Gmr} to Mrn {Mrn}",
-            typeof(TConsumer).Name,
-            matchedGmr.Gmr,
-            matchedGmr.Mrn
-        );
+        using (
+            _logger.BeginScope(
+                new Dictionary<string, object>
+                {
+                    ["event.reference"] = matchedGmr.Gmr.GmrId,
+                    ["event.type"] = "matched-gmr",
+                    ["event.provider"] = GetType().Name,
+                }
+            )
+        )
+        {
+            _logger.LogInformation(
+                "{Consumer} received matched GMR {Gmr} to Mrn {Mrn}",
+                typeof(TConsumer).Name,
+                matchedGmr.Gmr,
+                matchedGmr.Mrn
+            );
 
-        await processor.Process(matchedGmr, stoppingToken);
+            await processor.Process(matchedGmr, stoppingToken);
+        }
     }
 }
