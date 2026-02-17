@@ -65,15 +65,16 @@ Configuration is provided via `appsettings*.json` and overridden by environment 
 
 ## Feature Flags
 
-| Variable                         | Purpose                                                                             |
-|----------------------------------|-------------------------------------------------------------------------------------|
-| `ENABLE_SQS_CONSUMERS`           | Enables or disables the SQS queue consumers                                         |
-| `ENABLE_TRADE_IMPORTS_MESSAGING` | Enables or disables Azure Service Bus messaging                                     |
-| `ENABLE_STORE_OUTBOUND_MESSAGES` | Enables or disables storing outbound messages to MongoDB                            |
-| `ENABLE_GVMS_API_CLIENT_HOLD`    | Enables or disables GVMS API hold endpoint requests for placing/releasing GMR holds |
-| `ENABLE_DEV_ENDPOINTS`           | Enables or disables development message endpoints                                   |
-| `DEV_ENDPOINT_USERNAME`          | Username for basic authentication on development endpoints                          |
-| `DEV_ENDPOINT_PASSWORD`          | Password for basic authentication on development endpoints                          |
+| Variable                           | Purpose                                                                             |
+|------------------------------------|-------------------------------------------------------------------------------------|
+| `ENABLE_MATCHED_GMR_SQS_CONSUMERS` | Enables or disables the Matched GMR SQS queue consumers                             |
+| `ENABLE_DATA_EVENT_SQS_CONSUMER`   | Enables or disables the Data Event SQS queue consumer                               |
+| `ENABLE_TRADE_IMPORTS_MESSAGING`   | Enables or disables Azure Service Bus messaging                                     |
+| `ENABLE_STORE_OUTBOUND_MESSAGES`   | Enables or disables storing outbound messages to MongoDB                            |
+| `ENABLE_GVMS_API_CLIENT_HOLD`      | Enables or disables GVMS API hold endpoint requests for placing/releasing GMR holds |
+| `ENABLE_DEV_ENDPOINTS`             | Enables or disables development message endpoints                                   |
+| `DEV_ENDPOINT_USERNAME`            | Username for basic authentication on development endpoints                          |
+| `DEV_ENDPOINT_PASSWORD`            | Password for basic authentication on development endpoints                          |
 
 ## Testing
 

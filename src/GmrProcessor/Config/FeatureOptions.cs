@@ -17,8 +17,11 @@ public class FeatureOptions
     [ConfigurationKeyName("ENABLE_STORE_OUTBOUND_MESSAGES")]
     public bool EnableStoreOutboundMessages { get; init; } = false;
 
-    [ConfigurationKeyName("ENABLE_SQS_CONSUMERS")]
-    public bool EnableSqsConsumers { get; init; } = false;
+    [ConfigurationKeyName("ENABLE_MATCHED_GMR_SQS_CONSUMERS")]
+    public bool EnableMatchedGmrSqsConsumers { get; init; } = false;
+
+    [ConfigurationKeyName("ENABLE_DATA_EVENT_SQS_CONSUMER")]
+    public bool EnableDataEventSqsConsumer { get; init; } = false;
 
     [ConfigurationKeyName("ENABLE_GVMS_API_CLIENT_HOLD")]
     public bool EnableGvmsApiClientHold { get; init; } = false;
