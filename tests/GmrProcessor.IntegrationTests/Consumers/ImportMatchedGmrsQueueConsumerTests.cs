@@ -81,7 +81,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
         var importMatchMessage = allMessages[0].Body.ToObjectFromJson<ImportMatchMessage>();
 
         Assert.NotNull(importMatchMessage);
-        importMatchMessage.ImportReference.Should().Be(expectedImport.ReferenceNumber);
+        importMatchMessage.ReferenceNumber.Should().Be(expectedImport.ReferenceNumber);
         importMatchMessage.Match.Should().BeTrue();
     }
 
@@ -162,7 +162,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
         var importMatchMessage = allMessages[0].Body.ToObjectFromJson<ImportMatchMessage>();
 
         Assert.NotNull(importMatchMessage);
-        importMatchMessage.ImportReference.Should().Be(expectedTransitReference);
+        importMatchMessage.ReferenceNumber.Should().Be(expectedTransitReference);
         importMatchMessage.Match.Should().BeTrue();
     }
 }

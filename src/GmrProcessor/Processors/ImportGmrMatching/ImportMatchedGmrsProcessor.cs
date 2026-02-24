@@ -79,7 +79,7 @@ public class ImportMatchedGmrsProcessor(
             string.Join(",", enumerable.ToList())
         );
 
-        var messages = enumerable.Select(um => new ImportMatchMessage { ImportReference = um, Match = true });
+        var messages = enumerable.Select(um => new ImportMatchMessage { ReferenceNumber = um, Match = true });
         await tradeImportsServiceBus.SendMessagesAsync(messages, _importMatchQueueOptions.QueueName, cancellationToken);
         await mongoContext.MatchedImportNotifications.BulkWrite(bulkOperations, cancellationToken);
 
