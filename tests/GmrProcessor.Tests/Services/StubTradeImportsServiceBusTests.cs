@@ -21,13 +21,13 @@ public class StubTradeImportsServiceBusTests
             new()
             {
                 ReferenceNumber = ImportPreNotificationFixtures.GenerateRandomReference(),
-                Mrn = CustomsDeclarationFixtures.GenerateMrn(),
+                EntryReference = CustomsDeclarationFixtures.GenerateMrn(),
                 LocalDateTimeOfArrival = new DateTime(2025, 1, 2, 3, 4, 5, DateTimeKind.Utc),
             },
             new()
             {
                 ReferenceNumber = ImportPreNotificationFixtures.GenerateRandomReference(),
-                Mrn = CustomsDeclarationFixtures.GenerateMrn(),
+                EntryReference = CustomsDeclarationFixtures.GenerateMrn(),
                 LocalDateTimeOfArrival = new DateTime(2025, 1, 2, 4, 5, 6, DateTimeKind.Utc),
             },
         };
