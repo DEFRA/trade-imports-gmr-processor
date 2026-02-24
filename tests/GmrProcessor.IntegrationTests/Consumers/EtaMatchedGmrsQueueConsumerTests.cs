@@ -84,7 +84,7 @@ public class EtaMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFixtur
 
         Assert.NotNull(importMatchMessage);
         importMatchMessage.ReferenceNumber.Should().Be(expectedImport.ReferenceNumber);
-        importMatchMessage.Mrn.Should().Be(expectedMrn);
+        importMatchMessage.EntryReference.Should().Be(expectedMrn);
         importMatchMessage
             .LocalDateTimeOfArrival.Should()
             .BeCloseTo(expectedCheckedInDateTime, TimeSpan.FromMinutes(1));

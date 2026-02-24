@@ -81,7 +81,7 @@ public class EtaMatchedGmrProcessor(
         var ipaffsMessages = allCheds.Select(chedRef => new IpaffsUpdatedTimeOfArrivalMessage
         {
             LocalDateTimeOfArrival = ParseArrivalTimestamp(matchedGmr.Gmr.CheckedInCrossing?.LocalDateTimeOfArrival!),
-            Mrn = matchMrn,
+            EntryReference = matchMrn,
             ReferenceNumber = chedRef,
         });
 
@@ -103,12 +103,7 @@ public class EtaMatchedGmrProcessor(
 
     private static DateTime ParseArrivalTimestamp(string input)
     {
-        return DateTime.ParseExact(
-            input,
-            "yyyy-MM-dd'T'HH:mm",
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal
-        );
+        return DateTime.ParseExact(input, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None);
     }
 
     private static EtaGmr BuildGtoGmr(Gmr gmr) =>
