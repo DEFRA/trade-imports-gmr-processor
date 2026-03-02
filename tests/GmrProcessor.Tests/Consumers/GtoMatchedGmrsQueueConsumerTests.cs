@@ -62,7 +62,7 @@ public class GtoMatchedGmrsQueueConsumerTests
         await InvokeProcessMessageAsync(message, CancellationToken.None);
 
         var expectedMessage =
-            $"GtoMatchedGmrsQueueConsumer received matched GMR {matchedGmr.Gmr.GmrId} to Mrn {matchedGmr.Mrn}";
+            $"GtoMatchedGmrsQueueConsumer received matched GMR {matchedGmr.Gmr.GmrId} linked to MRN {matchedGmr.Mrn}";
         _logger.Verify(
             x =>
                 x.Log(
