@@ -42,9 +42,9 @@ public abstract class MatchedGmrsQueueConsumer<TConsumer, T>(
         )
         {
             _logger.LogInformation(
-                "{Consumer} received matched GMR {Gmr} to Mrn {Mrn}",
+                "{Consumer} received matched GMR {GmrId} linked to MRN {Mrn}",
                 typeof(TConsumer).Name,
-                matchedGmr.Gmr,
+                matchedGmr.Gmr.GmrId,
                 matchedGmr.Mrn
             );
 
