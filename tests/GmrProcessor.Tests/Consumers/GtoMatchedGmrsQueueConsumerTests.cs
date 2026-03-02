@@ -8,7 +8,7 @@ using GmrProcessor.Consumers;
 using GmrProcessor.Metrics;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Tests.Metrics;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using TestFixtures;
@@ -18,6 +18,7 @@ namespace GmrProcessor.Tests.Consumers;
 public class GtoMatchedGmrsQueueConsumerTests
 {
     private readonly Mock<IGtoMatchedGmrProcessor> _processor = new();
+    private readonly Mock<ILogger<GtoMatchedGmrsQueueConsumer>> _logger = new();
     private readonly GtoMatchedGmrsQueueConsumer _consumer;
 
     public GtoMatchedGmrsQueueConsumerTests()
@@ -26,7 +27,7 @@ public class GtoMatchedGmrsQueueConsumerTests
             .Setup(p => p.Process(It.IsAny<MatchedGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(GtoMatchedGmrProcessorResult.NoHoldChange);
         _consumer = new GtoMatchedGmrsQueueConsumer(
-            NullLogger<GtoMatchedGmrsQueueConsumer>.Instance,
+            _logger.Object,
             new ConsumerMetrics(MockMeterFactory.Create()),
             _processor.Object,
             Options.Create(new GtoMatchedGmrsQueueOptions { QueueName = "queue" }),
@@ -47,6 +48,29 @@ public class GtoMatchedGmrsQueueConsumerTests
                 p.Process(
                     It.Is<MatchedGmr>(m => m.Mrn == matchedGmr.Mrn && m.Gmr.GmrId == matchedGmr.Gmr.GmrId),
                     It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task ProcessMessageAsync_WhenReceivingAValidMessage_LogsGmrId()
+    {
+        var matchedGmr = new MatchedGmr { Mrn = "MRN123", Gmr = GmrFixtures.GmrFixture().Create() };
+        var message = new Message { Body = JsonSerializer.Serialize(matchedGmr) };
+
+        await InvokeProcessMessageAsync(message, CancellationToken.None);
+
+        var expectedMessage =
+            $"GtoMatchedGmrsQueueConsumer received matched GMR {matchedGmr.Gmr.GmrId} to Mrn {matchedGmr.Mrn}";
+        _logger.Verify(
+            x =>
+                x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString() == expectedMessage),
+                    null,
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
                 ),
             Times.Once
         );
