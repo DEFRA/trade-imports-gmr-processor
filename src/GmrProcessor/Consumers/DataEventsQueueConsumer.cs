@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -37,12 +36,12 @@ public sealed class DataEventsQueueConsumer(
         switch (message.GetResourceType())
         {
             case ResourceEventResourceTypes.ImportPreNotification:
-                var importPreNotification = DeserializeAsync<ResourceEvent<ImportPreNotification>>(json)!;
+                var importPreNotification = DeserializeAsync<ResourceEvent<ImportPreNotificationEvent>>(json)!;
                 await importPreNotificationProcessor.Process(importPreNotification, stoppingToken);
                 break;
 
             case ResourceEventResourceTypes.CustomsDeclaration:
-                var customsDeclaration = DeserializeAsync<ResourceEvent<CustomsDeclaration>>(json)!;
+                var customsDeclaration = DeserializeAsync<ResourceEvent<CustomsDeclarationEvent>>(json)!;
                 await mrnChedMatchProcessor.ProcessCustomsDeclaration(customsDeclaration, stoppingToken);
                 break;
         }

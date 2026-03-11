@@ -27,7 +27,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
         var expectedChedReference = ImportPreNotificationFixtures.GenerateRandomReference();
 
         var importEvent = await SendImportPreNotificationAsync(expectedChedReference, expectedMrn);
-        var expectedImport = importEvent.Resource!;
+        var expectedImport = importEvent.Resource!.ImportPreNotification!;
 
         var matchedGmrsConfig = GetConfig<ImportMatchedGmrsQueueOptions>();
         var (matchedGmrsClient, matchedGmrsQueueUrl) = await GetSqsClient(matchedGmrsConfig.QueueName);

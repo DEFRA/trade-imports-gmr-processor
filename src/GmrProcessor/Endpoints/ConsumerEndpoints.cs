@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Processors.Gto;
@@ -39,7 +38,7 @@ public static class ConsumerEndpoints
             switch (resourceType)
             {
                 case ResourceEventResourceTypes.CustomsDeclaration:
-                    var customsDeclaration = DeserializeEvent<CustomsDeclaration>(body, logger);
+                    var customsDeclaration = DeserializeEvent<CustomsDeclarationEvent>(body, logger);
                     if (customsDeclaration == null)
                     {
                         return Results.BadRequest(new { error = "Failed to deserialize CustomsDeclaration payload" });
@@ -48,7 +47,7 @@ public static class ConsumerEndpoints
                     return Results.Accepted();
 
                 case ResourceEventResourceTypes.ImportPreNotification:
-                    var importPreNotification = DeserializeEvent<ImportPreNotification>(body, logger);
+                    var importPreNotification = DeserializeEvent<ImportPreNotificationEvent>(body, logger);
                     if (importPreNotification == null)
                     {
                         return Results.BadRequest(

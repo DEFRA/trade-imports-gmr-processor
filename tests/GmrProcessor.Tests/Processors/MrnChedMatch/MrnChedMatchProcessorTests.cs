@@ -1,4 +1,5 @@
 using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
+using Defra.TradeImportsDataApi.Domain.Events;
 using GmrProcessor.Data;
 using GmrProcessor.Processors.MrnChedMatch;
 using Microsoft.Extensions.Logging.Abstractions;
