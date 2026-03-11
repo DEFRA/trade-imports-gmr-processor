@@ -1,4 +1,3 @@
-using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using GmrProcessor.Data;
 using GmrProcessor.Logging;
@@ -16,7 +15,7 @@ public class MrnChedMatchProcessor(IMongoContext mongoContext, ILogger<MrnChedMa
     );
 
     public async Task<MrnChedMatchProcessorResult> ProcessCustomsDeclaration(
-        ResourceEvent<CustomsDeclaration> customsDeclarationEvent,
+        ResourceEvent<CustomsDeclarationEvent> customsDeclarationEvent,
         CancellationToken cancellationToken
     )
     {

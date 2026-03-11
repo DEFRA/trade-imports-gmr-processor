@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -75,7 +74,7 @@ public class DataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -109,7 +108,7 @@ public class DataEventsQueueConsumerTests
         _mrnChedMatchProcessor.Verify(
             processor =>
                 processor.ProcessCustomsDeclaration(
-                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<ResourceEvent<CustomsDeclarationEvent>>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
@@ -117,7 +116,7 @@ public class DataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -138,7 +137,7 @@ public class DataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -165,14 +164,14 @@ public class DataEventsQueueConsumerTests
 
         _importPreNotificationProcessor.Verify(
             processor =>
-                processor.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+                processor.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
 
         _mrnChedMatchProcessor.Verify(
             processor =>
                 processor.ProcessCustomsDeclaration(
-                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<ResourceEvent<CustomsDeclarationEvent>>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never
@@ -199,11 +198,14 @@ public class DataEventsQueueConsumerTests
         payload.Should().Contain("\"operation\"");
 
         var act = () =>
-            JsonSerializer.Deserialize<ResourceEvent<ImportPreNotification>>(payload, defaultJsonSerializerOptions);
+            JsonSerializer.Deserialize<ResourceEvent<ImportPreNotificationEvent>>(
+                payload,
+                defaultJsonSerializerOptions
+            );
 
         act.Should().Throw<JsonException>().Which.Message.Should().Contain("missing required properties");
 
-        var deserialised = JsonSerializer.Deserialize<ResourceEvent<ImportPreNotification>>(
+        var deserialised = JsonSerializer.Deserialize<ResourceEvent<ImportPreNotificationEvent>>(
             payload,
             webJsonSerializerOptions
         );

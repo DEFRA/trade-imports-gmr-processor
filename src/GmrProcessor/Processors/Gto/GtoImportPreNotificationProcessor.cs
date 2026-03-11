@@ -21,12 +21,12 @@ public class GtoImportPreNotificationProcessor(
         new PrefixedLogger<GtoImportPreNotificationProcessor>(logger, "GTO");
 
     public async Task<GtoImportNotificationProcessorResult> Process(
-        ResourceEvent<ImportPreNotification> importPreNotificationEvent,
+        ResourceEvent<ImportPreNotificationEvent> importPreNotificationEvent,
         CancellationToken cancellationToken
     )
     {
         var reference = importPreNotificationEvent.ResourceId;
-        var importPreNotification = importPreNotificationEvent.Resource!;
+        var importPreNotification = importPreNotificationEvent.Resource!.ImportPreNotification!;
 
         var importTransitResult = TransitValidation.IsTransit(importPreNotification);
 

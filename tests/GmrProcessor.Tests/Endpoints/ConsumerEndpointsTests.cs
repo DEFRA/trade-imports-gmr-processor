@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Defra.TradeImportsDataApi.Domain.CustomsDeclaration;
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
 using GmrProcessor.Config;
@@ -97,7 +96,7 @@ public class ConsumerEndpointsTests
         mockCustomsProcessor.Verify(
             p =>
                 p.ProcessCustomsDeclaration(
-                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<ResourceEvent<CustomsDeclarationEvent>>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
@@ -130,7 +129,7 @@ public class ConsumerEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
         mockImportProcessor.Verify(
-            p => p.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()),
+            p => p.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -162,7 +161,7 @@ public class ConsumerEndpointsTests
         mockCustomsProcessor
             .Setup(p =>
                 p.ProcessCustomsDeclaration(
-                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<ResourceEvent<CustomsDeclarationEvent>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -237,14 +236,14 @@ public class ConsumerEndpointsTests
         mockCustomsProcessor
             .Setup(p =>
                 p.ProcessCustomsDeclaration(
-                    It.IsAny<ResourceEvent<CustomsDeclaration>>(),
+                    It.IsAny<ResourceEvent<CustomsDeclarationEvent>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
             .ReturnsAsync(new MrnChedMatchProcessorResult());
 
         mockImportProcessor
-            .Setup(p => p.Process(It.IsAny<ResourceEvent<ImportPreNotification>>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.Process(It.IsAny<ResourceEvent<ImportPreNotificationEvent>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GtoImportNotificationProcessorResult());
 
         builder.Services.AddSingleton(mockCustomsProcessor.Object);

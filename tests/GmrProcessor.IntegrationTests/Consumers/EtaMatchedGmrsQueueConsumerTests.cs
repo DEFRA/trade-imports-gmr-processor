@@ -26,7 +26,7 @@ public class EtaMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFixtur
         var expectedChedReference = ImportPreNotificationFixtures.GenerateRandomReference();
 
         var importEvent = await SendImportPreNotificationAsync(expectedChedReference, expectedMrn);
-        var expectedImport = importEvent.Resource!;
+        var expectedImport = importEvent.Resource!.ImportPreNotification!;
         var expectedCheckedInDateTime = DateTime.UtcNow;
 
         var matchedGmrsConfig = GetConfig<EtaMatchedGmrsQueueOptions>();

@@ -136,7 +136,7 @@ public abstract class IntegrationTestBase
         await sqsClient.SendMessageAsync(message, TestContext.Current.CancellationToken);
     }
 
-    protected async Task<ResourceEvent<ImportPreNotification>> SendImportPreNotificationAsync(
+    protected async Task<ResourceEvent<ImportPreNotificationEvent>> SendImportPreNotificationAsync(
         string chedReference,
         string mrn,
         Action<ImportPreNotification>? configure = null,
@@ -170,7 +170,7 @@ public abstract class IntegrationTestBase
         return resourceEvent;
     }
 
-    protected async Task<ResourceEvent<CustomsDeclaration>> SendCustomsDeclarationAsync(
+    protected async Task<ResourceEvent<CustomsDeclarationEvent>> SendCustomsDeclarationAsync(
         string mrn,
         IEnumerable<string> chedReferences,
         Action<CustomsDeclaration>? configure = null,
