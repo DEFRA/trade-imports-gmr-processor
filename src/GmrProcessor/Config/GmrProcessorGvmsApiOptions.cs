@@ -13,7 +13,7 @@ public class GmrProcessorGvmsApiOptions : GvmsApiOptions
     private const int GvmsApiRateLimit = 3;
 
     public int DeployedContainerCount { get; set; } = 3;
-    public int QueueLimit { get; set; } = 10;
+    public int QueueLimit { get; set; } = 100;
 
     public HttpCircuitBreakerStrategyOptions CircuitBreaker { get; } = new();
 
