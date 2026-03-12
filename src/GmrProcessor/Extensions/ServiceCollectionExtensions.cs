@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Threading.RateLimiting;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
@@ -135,6 +136,10 @@ public static class ServiceCollectionExtensions
                     return Uri.TryCreate(baseUri, UriKind.Absolute, out _) && baseUri.EndsWith('/');
                 },
                 "BaseUri must be a valid absolute URI with trailing slash"
+            )
+            .Validate(
+                apiOptions => apiOptions.DeployedContainerCount > 0 && apiOptions.DeployedContainerCount <= 3,
+                "DeployedContainerCount must be between 1 and 3 (GVMS API rate limit is 3 req/s)"
             );
 
         services.AddValidateOptions<GvmsApiOptions>(GmrProcessorGvmsApiOptions.SectionName);
@@ -157,6 +162,7 @@ public static class ServiceCollectionExtensions
                     var gvmsApiSettings = context.GetOptions<GmrProcessorGvmsApiOptions>();
 
                     pipelineBuilder
+                        .AddRateLimiter(new TokenBucketRateLimiter(gvmsApiSettings.GetRateLimiterOptions()))
                         .AddRetry(gvmsApiSettings.Retry)
                         .AddTimeout(gvmsApiSettings.Timeout)
                         .AddCircuitBreaker(gvmsApiSettings.CircuitBreaker);
