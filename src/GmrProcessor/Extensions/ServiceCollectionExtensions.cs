@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Threading.RateLimiting;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
@@ -157,6 +158,7 @@ public static class ServiceCollectionExtensions
                     var gvmsApiSettings = context.GetOptions<GmrProcessorGvmsApiOptions>();
 
                     pipelineBuilder
+                        .AddRateLimiter(new TokenBucketRateLimiter(gvmsApiSettings.GetRateLimiterOptions()))
                         .AddRetry(gvmsApiSettings.Retry)
                         .AddTimeout(gvmsApiSettings.Timeout)
                         .AddCircuitBreaker(gvmsApiSettings.CircuitBreaker);
