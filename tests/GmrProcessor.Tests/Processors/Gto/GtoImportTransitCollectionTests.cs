@@ -22,9 +22,9 @@ public class GtoImportTransitCollectionTests
     }
 
     [Fact]
-    public async Task GetByMrn_CallsFindOne()
+    public async Task GetAllByMrn_CallsFindMany()
     {
-        var expected = new ImportTransit
+        var importTransit = new ImportTransit
         {
             Id = ImportPreNotificationFixtures.GenerateRandomReference(),
             Mrn = CustomsDeclarationFixtures.GenerateMrn(),
@@ -32,12 +32,19 @@ public class GtoImportTransitCollectionTests
         };
 
         _mockImportTransits
-            .Setup(m => m.FindOne(It.IsAny<Expression<Func<ImportTransit, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expected);
+            .Setup(m =>
+                m.FindMany<object>(
+                    It.IsAny<Expression<Func<ImportTransit, bool>>>(),
+                    It.IsAny<CancellationToken>(),
+                    null,
+                    null
+                )
+            )
+            .ReturnsAsync([importTransit]);
 
-        var result = await _repo.GetByMrn(expected.Id, CancellationToken.None);
+        var result = await _repo.GetAllByMrn(importTransit.Mrn!, CancellationToken.None);
 
-        result.Should().BeSameAs(expected);
+        result.Should().BeEquivalentTo(new[] { importTransit });
     }
 
     [Fact]

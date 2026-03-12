@@ -37,8 +37,8 @@ public class GtoMatchedGmrProcessorTests
     {
         var matched = BuildMatchedGmr();
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ImportTransit?)null);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         var result = await _processor.Process(matched, CancellationToken.None);
 
@@ -54,8 +54,8 @@ public class GtoMatchedGmrProcessorTests
     {
         var matched = BuildMatchedGmr();
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ImportTransit?)null);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         await _processor.Process(matched, CancellationToken.None);
 
@@ -66,7 +66,7 @@ public class GtoMatchedGmrProcessorTests
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>(
                         (state, _) =>
-                            state.ToString() == $"GTO: Skipping {matched.Mrn} because no import transit was found"
+                            state.ToString() == $"GTO: Skipping {matched.Mrn} because no import transits were found"
                     ),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()
@@ -88,8 +88,8 @@ public class GtoMatchedGmrProcessorTests
         };
 
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
         _mockMatchedGmrRepository
             .Setup(r => r.UpsertMatchedItem(It.IsAny<MatchedGmr>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -126,8 +126,8 @@ public class GtoMatchedGmrProcessorTests
         };
 
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
         _mockGtoGmrCollection
             .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
@@ -158,8 +158,8 @@ public class GtoMatchedGmrProcessorTests
         };
 
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
         _mockGtoGmrCollection
             .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
@@ -196,8 +196,8 @@ public class GtoMatchedGmrProcessorTests
         };
 
         _mockImportTransitRepository
-            .Setup(r => r.GetByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importTransit);
+            .Setup(r => r.GetAllByMrn(matched.Mrn!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([importTransit]);
         _mockGtoGmrCollection
             .Setup(r => r.UpdateOrInsert(It.IsAny<GtoGmr>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gtoGmr);

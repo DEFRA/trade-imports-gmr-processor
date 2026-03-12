@@ -22,10 +22,10 @@ public class GtoMatchedGmrProcessor(
 
     public async Task<GtoMatchedGmrProcessorResult> Process(MatchedGmr matchedGmr, CancellationToken cancellationToken)
     {
-        var importTransit = await gtoImportTransitCollection.GetByMrn(matchedGmr.Mrn!, cancellationToken);
-        if (importTransit is null)
+        var importTransits = await gtoImportTransitCollection.GetAllByMrn(matchedGmr.Mrn!, cancellationToken);
+        if (importTransits.Count == 0)
         {
-            _logger.LogInformation("Skipping {Mrn} because no import transit was found", matchedGmr.Mrn);
+            _logger.LogInformation("Skipping {Mrn} because no import transits were found", matchedGmr.Mrn);
             return GtoMatchedGmrProcessorResult.SkippedNoTransit;
         }
 
