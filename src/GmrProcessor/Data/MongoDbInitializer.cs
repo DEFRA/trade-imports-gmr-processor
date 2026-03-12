@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using GmrProcessor.Data.Auditing;
+using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Data.Matching;
 using GmrProcessor.Utils.Mongo;
@@ -19,6 +20,7 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
         await InitGtoMatchedGmrItemCollection(cancellationToken);
         await InitMessageAuditCollection(cancellationToken);
         await InitMrnChedMatchCollection(cancellationToken);
+        await InitImportTransitCollection(cancellationToken);
     }
 
     private async Task InitGtoMatchedGmrItemCollection(CancellationToken cancellationToken)
@@ -91,6 +93,17 @@ public class MongoDbInitializer(IMongoDbClientFactory database, ILogger<MongoDbI
                     Background = true,
                     ExpireAfter = TimeSpan.FromDays(30),
                 }
+            ),
+            cancellationToken
+        );
+    }
+
+    private async Task InitImportTransitCollection(CancellationToken cancellationToken)
+    {
+        await WithCollectionName<ImportTransit>(nameof(ImportTransit))(
+            new CreateIndexModel<ImportTransit>(
+                Builders<ImportTransit>.IndexKeys.Ascending(x => x.Mrn),
+                new CreateIndexOptions { Name = "Mrn_Index", Background = true }
             ),
             cancellationToken
         );

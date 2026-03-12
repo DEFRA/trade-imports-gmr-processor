@@ -21,7 +21,7 @@ public class MongoCollectionSet<T>(IMongoDbClientFactory database, string? colle
         await Collection.DeleteOneAsync(filter, cancellationToken);
 
     public async Task<T?> FindOne(Expression<Func<T, bool>> expression, CancellationToken cancellationToken) =>
-        await Queryable.SingleOrDefaultAsync(expression, cancellationToken);
+        await Queryable.FirstOrDefaultAsync(expression, cancellationToken);
 
     public async Task<List<T>> FindMany<TKey>(
         Expression<Func<T, bool>> where,
