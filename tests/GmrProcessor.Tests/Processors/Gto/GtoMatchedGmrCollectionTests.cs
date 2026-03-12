@@ -138,27 +138,4 @@ public class GtoMatchedGmrCollectionTests
 
         result.Should().ContainSingle().Which.Should().BeSameAs(matchedItem);
     }
-
-    [Fact]
-    public async Task GetAllByMrn_ReturnsMultipleItemsForSameMrn()
-    {
-        var mrn = ImportPreNotificationFixtures.GenerateRandomReference();
-        var item1 = new MatchedGmrItem { Mrn = mrn, GmrId = GmrFixtures.GenerateGmrId() };
-        var item2 = new MatchedGmrItem { Mrn = mrn, GmrId = GmrFixtures.GenerateGmrId() };
-
-        _matchedItems
-            .Setup(m =>
-                m.FindMany<MatchedGmrItem>(
-                    It.IsAny<Expression<Func<MatchedGmrItem, bool>>>(),
-                    It.IsAny<CancellationToken>(),
-                    null,
-                    null
-                )
-            )
-            .ReturnsAsync([item1, item2]);
-
-        var result = await _repo.GetAllByMrn(mrn, CancellationToken.None);
-
-        result.Should().HaveCount(2).And.Contain(item1).And.Contain(item2);
-    }
 }

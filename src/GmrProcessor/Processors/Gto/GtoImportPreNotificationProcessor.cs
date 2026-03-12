@@ -63,7 +63,7 @@ public class GtoImportPreNotificationProcessor(
         }
 
         var processorResult = GtoImportNotificationProcessorResult.NoHoldChange;
-        foreach (var matchedGmr in matchedGmrs.DistinctBy(x => x.GmrId))
+        foreach (var matchedGmr in matchedGmrs)
         {
             var result = await gvmsHoldService.PlaceOrReleaseHold(matchedGmr.GmrId, cancellationToken);
             processorResult = result switch
