@@ -55,20 +55,25 @@ public class GtoImportPreNotificationProcessor(
 
         var mrn = importTransitResult.Mrn!;
 
-        var matchedGmr = await matchedGmrCollection.GetByMrn(mrn, cancellationToken);
-        if (matchedGmr is null)
+        var matchedGmrs = await matchedGmrCollection.GetAllByMrn(mrn, cancellationToken);
+        if (matchedGmrs.Count == 0)
         {
             _logger.LogInformation("Tried to place or release hold on MRN {Mrn} but no MatchedGmr exists", mrn);
             return GtoImportNotificationProcessorResult.NoMatchedGmrExists;
         }
 
-        var result = await gvmsHoldService.PlaceOrReleaseHold(matchedGmr.GmrId, cancellationToken);
-        return result switch
+        var processorResult = GtoImportNotificationProcessorResult.NoHoldChange;
+        foreach (var matchedGmr in matchedGmrs)
         {
-            GvmsHoldResult.HoldPlaced => GtoImportNotificationProcessorResult.HoldPlaced,
-            GvmsHoldResult.HoldReleased => GtoImportNotificationProcessorResult.HoldReleased,
-            GvmsHoldResult.NoHoldChange => GtoImportNotificationProcessorResult.NoHoldChange,
-            _ => throw new InvalidOperationException($"Unexpected GvmsHoldResult value: {result}"),
-        };
+            var result = await gvmsHoldService.PlaceOrReleaseHold(matchedGmr.GmrId, cancellationToken);
+            processorResult = result switch
+            {
+                GvmsHoldResult.HoldPlaced => GtoImportNotificationProcessorResult.HoldPlaced,
+                GvmsHoldResult.HoldReleased => GtoImportNotificationProcessorResult.HoldReleased,
+                GvmsHoldResult.NoHoldChange => GtoImportNotificationProcessorResult.NoHoldChange,
+                _ => throw new InvalidOperationException($"Unexpected GvmsHoldResult value: {result}"),
+            };
+        }
+        return processorResult;
     }
 }

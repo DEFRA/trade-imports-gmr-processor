@@ -115,35 +115,27 @@ public class GtoMatchedGmrCollectionTests
     }
 
     [Fact]
-    public async Task GetByMrn_ReturnsMatchedItemByMrn()
+    public async Task GetAllByMrn_ReturnsMatchedItemsByMrn()
     {
         var mrn = ImportPreNotificationFixtures.GenerateRandomReference();
         var matchedItem = new MatchedGmrItem { Mrn = mrn, GmrId = GmrFixtures.GenerateGmrId() };
 
         _matchedItems
             .Setup(m =>
-                m.FindOne(
+                m.FindMany<MatchedGmrItem>(
                     It.Is<Expression<Func<MatchedGmrItem, bool>>>(f =>
                         f.Compile().Invoke(new MatchedGmrItem { Mrn = mrn, GmrId = matchedItem.GmrId })
                         && !f.Compile().Invoke(new MatchedGmrItem { Mrn = "different", GmrId = matchedItem.GmrId })
                     ),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    null,
+                    null
                 )
             )
-            .ReturnsAsync(matchedItem);
+            .ReturnsAsync([matchedItem]);
 
-        var result = await _repo.GetByMrn(mrn, CancellationToken.None);
+        var result = await _repo.GetAllByMrn(mrn, CancellationToken.None);
 
-        result.Should().BeSameAs(matchedItem);
-        _matchedItems.Verify(
-            m =>
-                m.FindOne(
-                    It.Is<Expression<Func<MatchedGmrItem, bool>>>(f =>
-                        f.Compile().Invoke(new MatchedGmrItem { Mrn = mrn, GmrId = matchedItem.GmrId })
-                    ),
-                    It.IsAny<CancellationToken>()
-                ),
-            Times.Once
-        );
+        result.Should().ContainSingle().Which.Should().BeSameAs(matchedItem);
     }
 }
