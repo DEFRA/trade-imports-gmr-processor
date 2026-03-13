@@ -41,6 +41,96 @@ Run the API via Docker (`docker compose up gmr-processor`) or via your IDE using
 base environment configuration, adding the relevant environment variables from `.env`.
 
 
+## Data Flows
+
+The `GtoDataEventsQueueConsumer` routes messages to other processors by the `ResourceType`:
+
+```
+SQS (trade_imports_data_upserted_gmr_processor_gto)
+  │
+  ▼
+DataEventsQueueConsumer
+  │  Routes by ResourceType:
+  ├─ ImportPreNotification → GtoImportPreNotificationProcessor
+  └─ CustomsDeclaration   → MrnChedMatchProcessor
+```
+
+**1. Mrn:CHED Match Processor - CustomsDeclaration events from BTMS and creates Mrn:CHED matches for later use **
+
+```
+Receives CustomsDeclaration events from BTMS
+
+MrnChedMatchProcessor
+  ├─ Extract MRN (ResourceId) + validate format
+  ├─ Extract CHED references from ClearanceDecision.Results[].ImportPreNotification
+  ├─ Skip if invalid MRN or no CHED references
+  └─ Upsert MrnChedMatch { Id: MRN, ChedReferences: [...] } → MongoDB
+```
+
+**2. GTO Flow — Hold or Release Decisions**
+
+```
+Receives ImportPreNotifications events from BTMS
+
+GtoImportPreNotificationProcessor
+  ├─ TransitValidation.IsTransit()
+  │    Check ProvideCtcMrn == "YES" + valid NCTS MRN reference
+  │    If not a transit → skip
+  ├─ TransitOverride.IsTransitOverrideRequired()
+  │    Complete status (rejected/validated/partially_rejected) → no hold
+  │    Inspection required/inconclusive → hold
+  ├─ Create/Update ImportTransit record with required hold status → MongoDB
+  ├─ Lookup the provided NCTS MRN to find any associated GMRs
+  └─ For each matched GMR:
+       ▼
+     GvmsHoldService.PlaceOrReleaseHold()
+       ├─ Find all ImportTransits for MRNs related to GMR
+       ├─ Any ImportTransits requires hold? Compare with current stored state
+       ├─ Call GVMS API if a hold or release is required
+       └─ Update the HoldStatus → MongoDB
+```
+
+**3. Import Matching Flow — CHED-GMR Match Notification**
+
+```
+Receives MatchedGmrs from GMR Finder
+
+SQS (import_matched_gmrs)
+  │  MatchedGmr { GmrId, Mrn }
+  ▼
+ImportMatchedGmrsQueueConsumer
+  ▼
+ImportMatchedGmrsProcessor
+  ├─ MatchReferenceRepository.GetChedsByMrn()
+  │    Combines MrnChedMatches (from flow 1) + ImportTransits (from flow 2)
+  ├─ Find previously matched CHEDs → MongoDB (MatchedImportNotifications)
+  ├─ Identify newly matched CHEDs
+  ├─ Store new MatchedImportNotification → MongoDB
+  └─ Publish ImportMatchMessage { referenceNumber, match: true }
+       ▼
+     Azure Service Bus → IPAFFS
+```
+
+**4. ETA Flow — Arrival Time Updates**
+
+```
+Receives MatchedGmrs from GMR Finder
+
+SQS (eta_matched_gmrs)
+  │  MatchedGmr { GmrId, Mrn }
+  ▼
+EtaMatchedGmrsQueueConsumer
+  ▼
+EtaMatchedGmrProcessor
+  ├─ Only processes GMRs with state = EMBARKED
+  ├─ MatchReferenceRepository.GetChedsByMrn()
+  │    Same lookup as Import Matching flow
+  └─ Publish IpaffsUpdatedTimeOfArrivalMessage
+     { referenceNumber, entryReference, localDateTimeOfArrival }
+       ▼
+     Azure Service Bus → IPAFFS
+```
+
 ## Configuration
 
 Configuration is provided via `appsettings*.json` and overridden by environment variables. Key settings:
