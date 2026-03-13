@@ -29,7 +29,7 @@ public class GvmsHoldService(
 
     public async Task<GvmsHoldResult> PlaceOrReleaseHold(string gmrId, CancellationToken cancellationToken)
     {
-        var gmr = await gtoGmrCollection.FindOne(g => g.Gmr.GmrId == gmrId, cancellationToken);
+        var gmr = await gtoGmrCollection.FindOne(g => g.Id == gmrId, cancellationToken);
         if (gmr == null)
         {
             _logger.LogWarning("Tried to place or release a hold on {GmrId} which was not found", gmrId);
