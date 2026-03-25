@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Defra.TradeImportsGmrFinder.Domain.Events;
+using Defra.TradeImportsGmrFinder.GvmsClient.Contract;
 using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Common;
@@ -55,6 +56,30 @@ public class EtaMatchedGmrProcessorTests
         var result = await _processor.Process(matched, CancellationToken.None);
 
         result.Should().Be(EtaMatchedGmrProcessorResult.SkippedNotEmbarked);
+        _etaGmrCollection.Verify(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tradeImportsServiceBus.Verify(
+            s =>
+                s.SendMessagesAsync(
+                    It.IsAny<IEnumerable<IpaffsUpdatedTimeOfArrivalMessage>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Process_WhenCheckedInCrossingIsNull_ReturnsSkippedNoCheckedInCrossing()
+    {
+        var matched = new MatchedGmr
+        {
+            Mrn = CustomsDeclarationFixtures.GenerateMrn(),
+            Gmr = GmrFixtures.GmrFixture().With(g => g.CheckedInCrossing, (GmrCheckedInCrossing?)null).Create(),
+        };
+
+        var result = await _processor.Process(matched, CancellationToken.None);
+
+        result.Should().Be(EtaMatchedGmrProcessorResult.SkippedNoCheckedInCrossing);
         _etaGmrCollection.Verify(c => c.UpdateOrInsert(It.IsAny<EtaGmr>(), It.IsAny<CancellationToken>()), Times.Never);
         _tradeImportsServiceBus.Verify(
             s =>
