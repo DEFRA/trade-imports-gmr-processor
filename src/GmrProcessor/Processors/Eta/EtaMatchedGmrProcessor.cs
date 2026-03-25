@@ -42,6 +42,16 @@ public class EtaMatchedGmrProcessor(
             return EtaMatchedGmrProcessorResult.SkippedNotEmbarked;
         }
 
+        if (matchedGmr.Gmr.CheckedInCrossing?.LocalDateTimeOfArrival is null)
+        {
+            _logger.LogWarning(
+                "Skipping GMR {GmrId}, MRN {Mrn} because CheckedInCrossing is not set",
+                matchedGmr.Gmr.GmrId,
+                matchedGmr.Mrn
+            );
+            return EtaMatchedGmrProcessorResult.SkippedNoCheckedInCrossing;
+        }
+
         _logger.LogInformation("Processing ETA for GMR {GmrId}, MRN {Mrn}", matchedGmr.Gmr.GmrId, matchedGmr.Mrn);
 
         var oldEtaGmrRecord = await etaGmrCollection.UpdateOrInsert(BuildGtoGmr(matchedGmr.Gmr), cancellationToken);
