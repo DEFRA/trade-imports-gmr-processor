@@ -6,11 +6,12 @@ using GmrProcessor.Data.Gto;
 using GmrProcessor.Logging;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace GmrProcessor.Processors.Gto;
 
-public class GtoImportPreNotificationProcessor(
+public partial class GtoImportPreNotificationProcessor(
     IMongoContext mongoContext,
     ILogger<GtoImportPreNotificationProcessor> logger,
     IGtoMatchedGmrCollection matchedGmrCollection,
@@ -73,7 +74,57 @@ public class GtoImportPreNotificationProcessor(
                 GvmsHoldResult.NoHoldChange => GtoImportNotificationProcessorResult.NoHoldChange,
                 _ => throw new InvalidOperationException($"Unexpected GvmsHoldResult value: {result}"),
             };
+
+            LogHoldMessageContext(processorResult, matchedGmr, mrn, reference, importPreNotification);
         }
+
         return processorResult;
+    }
+
+    private void LogHoldMessageContext(
+        GtoImportNotificationProcessorResult processorResult,
+        MatchedGmrItem matchedGmr,
+        string mrn,
+        string reference,
+        ImportPreNotification importPreNotification
+    )
+    {
+        if (processorResult == GtoImportNotificationProcessorResult.HoldPlaced)
+        {
+            logger.LogInformation(
+                "Hold placed on GMR {Details}",
+                new HoldDecisionLogContext
+                {
+                    ChedReference = reference,
+                    Mrn = mrn,
+                    Gmr = matchedGmr.GmrId,
+                    PortOfEntry = importPreNotification.PartOne?.PortOfEntry,
+                    PortOfExit = importPreNotification.PartOne?.PortOfExit,
+                    CountryOfOrigin = importPreNotification.PartOne?.Commodities?.CountryOfOrigin,
+                    CountryOfDestination = importPreNotification.PartOne?.Commodities?.ConsignedCountry,
+                    ChedType = importPreNotification.ImportNotificationType,
+                    ProvideCtcMrn = importPreNotification.PartOne?.ProvideCtcMrn,
+                    PurposeGroup = importPreNotification.PartOne?.Purpose?.PurposeGroup,
+                    PurposeThirdCountry = importPreNotification.PartOne?.Purpose?.ThirdCountry,
+                    Timestamp = DateTime.UtcNow,
+                }.ToJson()
+            );
+        }
+    }
+
+    private sealed class HoldDecisionLogContext
+    {
+        public string? ChedReference { get; set; }
+        public string? Mrn { get; set; }
+        public string? Gmr { get; set; }
+        public string? PortOfEntry { get; set; }
+        public string? PortOfExit { get; set; }
+        public string? CountryOfOrigin { get; set; }
+        public string? CountryOfDestination { get; set; }
+        public string? ChedType { get; set; }
+        public string? ProvideCtcMrn { get; set; }
+        public string? PurposeGroup { get; set; }
+        public string? PurposeThirdCountry { get; set; }
+        public DateTime Timestamp { get; set; }
     }
 }
