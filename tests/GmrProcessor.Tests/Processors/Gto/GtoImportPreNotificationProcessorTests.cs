@@ -5,6 +5,7 @@ using GmrProcessor.Data.Gto;
 using GmrProcessor.Processors.Gto;
 using GmrProcessor.Services;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using MongoDB.Driver;
 using Moq;
 using TestFixtures;
@@ -18,6 +19,7 @@ public class GtoImportPreNotificationProcessorTests
     private readonly Mock<IGtoMatchedGmrCollection> _mockGtoMatchedGmrRepository = new();
     private readonly Mock<IGvmsHoldService> _mockGvmsHoldService = new();
     private readonly GtoImportPreNotificationProcessor _processor;
+    private readonly FakeLogger<GtoImportPreNotificationProcessor> _logger = new();
 
     public GtoImportPreNotificationProcessorTests()
     {
@@ -27,7 +29,7 @@ public class GtoImportPreNotificationProcessorTests
             .ReturnsAsync([]);
         _processor = new GtoImportPreNotificationProcessor(
             _mockMongoContext.Object,
-            NullLogger<GtoImportPreNotificationProcessor>.Instance,
+            _logger,
             _mockGtoMatchedGmrRepository.Object,
             _mockGvmsHoldService.Object
         );
@@ -85,6 +87,56 @@ public class GtoImportPreNotificationProcessorTests
                 ),
             Times.Never
         );
+    }
+
+    [Fact]
+    public async Task ProcessAsync_LogWhenOnHold()
+    {
+        const string importReference = "CHEDD.GB.2024.1234567";
+        const string mrn = "24GB12345678901234";
+        var gmrId = GmrFixtures.GenerateGmrId();
+
+        _mockGvmsHoldService
+            .Setup(x => x.PlaceOrReleaseHold(gmrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GvmsHoldResult.HoldPlaced);
+
+        var importPreNotification = ImportPreNotificationFixtures
+            .ImportPreNotificationFixture(importReference)
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
+            .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
+            .With(x => x.Status, string.Empty)
+            .Create();
+        var resourceEvent = ImportPreNotificationFixtures
+            .ImportPreNotificationResourceEventFixture(importPreNotification)
+            .Create();
+
+        _mockImportTransits
+            .Setup(x =>
+                x.FindOneAndUpdate(
+                    It.IsAny<FilterDefinition<ImportTransit>>(),
+                    It.IsAny<UpdateDefinition<ImportTransit>>(),
+                    It.IsAny<FindOneAndUpdateOptions<ImportTransit>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ImportTransit
+                {
+                    Id = importReference,
+                    TransitOverrideRequired = false,
+                    Mrn = mrn,
+                }
+            );
+        _mockGtoMatchedGmrRepository
+            .Setup(x => x.GetAllByMrn(mrn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MatchedGmrItem { Mrn = mrn, GmrId = gmrId }]);
+
+        await _processor.Process(resourceEvent, CancellationToken.None);
+
+        _mockGtoMatchedGmrRepository.Verify(x => x.GetAllByMrn(mrn, It.IsAny<CancellationToken>()), Times.Once);
+        _mockGvmsHoldService.Verify(x => x.PlaceOrReleaseHold(gmrId, It.IsAny<CancellationToken>()), Times.Once);
+        _logger.LatestRecord.Message.Should().Contain("Hold placed on GMR");
     }
 
     [Fact]
