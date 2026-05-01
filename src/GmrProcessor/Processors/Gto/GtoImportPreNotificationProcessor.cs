@@ -1,11 +1,13 @@
 using Defra.TradeImportsDataApi.Domain.Events;
 using Defra.TradeImportsDataApi.Domain.Ipaffs;
+using GmrProcessor.Config;
 using GmrProcessor.Data;
 using GmrProcessor.Data.Common;
 using GmrProcessor.Data.Gto;
 using GmrProcessor.Logging;
 using GmrProcessor.Services;
 using GmrProcessor.Utils;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -15,11 +17,13 @@ public partial class GtoImportPreNotificationProcessor(
     IMongoContext mongoContext,
     ILogger<GtoImportPreNotificationProcessor> logger,
     IGtoMatchedGmrCollection matchedGmrCollection,
-    IGvmsHoldService gvmsHoldService
+    IGvmsHoldService gvmsHoldService,
+    IOptions<FeatureOptions> options
 ) : IGtoImportPreNotificationProcessor
 {
     private readonly ILogger<GtoImportPreNotificationProcessor> _logger =
         new PrefixedLogger<GtoImportPreNotificationProcessor>(logger, "GTO");
+    private readonly FeatureOptions _features = options.Value;
 
     public async Task<GtoImportNotificationProcessorResult> Process(
         ResourceEvent<ImportPreNotificationEvent> importPreNotificationEvent,
@@ -44,13 +48,13 @@ public partial class GtoImportPreNotificationProcessor(
             .Update.SetOnInsert(x => x.Id, reference)
             .Set(x => x.TransitOverrideRequired, transitOverride.IsOverrideRequired)
             .Set(x => x.Mrn, importTransitResult.Mrn);
-        var options = new FindOneAndUpdateOptions<ImportTransit>
+        var findOptions = new FindOneAndUpdateOptions<ImportTransit>
         {
             IsUpsert = true,
             ReturnDocument = ReturnDocument.Before,
         };
 
-        await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, options, cancellationToken);
+        await mongoContext.ImportTransits.FindOneAndUpdate(filter, update, findOptions, cancellationToken);
 
         _logger.LogInformation("Inserted or updated ImportTransit {Id}", reference);
 
@@ -89,7 +93,7 @@ public partial class GtoImportPreNotificationProcessor(
         ImportPreNotification importPreNotification
     )
     {
-        if (processorResult == GtoImportNotificationProcessorResult.HoldPlaced)
+        if (processorResult == GtoImportNotificationProcessorResult.HoldPlaced || !_features.EnableGvmsApiClientHold)
         {
             logger.LogInformation(
                 "Hold placed on GMR {Details}",
