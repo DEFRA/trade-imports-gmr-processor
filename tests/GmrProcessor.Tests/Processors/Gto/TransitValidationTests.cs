@@ -31,25 +31,11 @@ public class TransitValidationTests
         result.Reason.Should().Be("");
     }
 
-    [Fact]
-    public void IsTransit_WhenPortOfExitIsNull_ReturnsNotTransit()
-    {
-        var importPreNotification = new ImportPreNotification
-        {
-            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = null },
-            ExternalReferences = [new ExternalReference { System = "NCTS", Reference = "24GB12345678901234" }],
-        };
-
-        var result = TransitValidation.IsTransit(importPreNotification);
-
-        result.IsTransit.Should().BeFalse();
-        result.Reason.Should().BeEmpty();
-    }
-
     [Theory]
+    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void IsTransit_WhenPortOfExitIsNullOrEmpty_ReturnsNotTransit(string portOfExit)
+    public void IsTransit_WhenPortOfExitIsNullOrEmpty_ReturnsNotTransit(string? portOfExit)
     {
         var importPreNotification = new ImportPreNotification
         {
