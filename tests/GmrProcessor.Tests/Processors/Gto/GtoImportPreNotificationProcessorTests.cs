@@ -52,7 +52,7 @@ public class GtoImportPreNotificationProcessorTests
     {
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture("CHEDD.GB.2024.1234567")
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(
                 x => x.ExternalReferences,
                 [new ExternalReference { System = "NCTS", Reference = "24GB12345678901234" }]
@@ -114,7 +114,7 @@ public class GtoImportPreNotificationProcessorTests
 
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(importReference)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)
@@ -159,7 +159,7 @@ public class GtoImportPreNotificationProcessorTests
 
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(resourceId)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)
@@ -205,7 +205,7 @@ public class GtoImportPreNotificationProcessorTests
 
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(importReference)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)
@@ -251,7 +251,7 @@ public class GtoImportPreNotificationProcessorTests
 
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(importReference)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)
@@ -306,7 +306,7 @@ public class GtoImportPreNotificationProcessorTests
 
         var importPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(importReference)
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(x => x.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = mrn }])
             .With(x => x.PartTwo, new PartTwo { InspectionRequired = "Required" })
             .With(x => x.Status, string.Empty)

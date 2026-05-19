@@ -35,7 +35,7 @@ public class GtoMatchedGmrsQueueConsumerTests : IntegrationTestBase
         var importPreNotification = new ImportPreNotification
         {
             Status = "SUBMITTED",
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             PartTwo = new PartTwo { InspectionRequired = "required" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedMrn }],
         };

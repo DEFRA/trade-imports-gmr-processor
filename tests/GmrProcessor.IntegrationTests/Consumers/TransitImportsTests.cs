@@ -24,7 +24,7 @@ public class TransitImportsTests : IntegrationTestBase
         var importPreNotification = new ImportPreNotification
         {
             Status = expectedStatus,
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedMrn }],
         };
 
@@ -66,7 +66,7 @@ public class TransitImportsTests : IntegrationTestBase
         var initialImportPreNotification = new ImportPreNotification
         {
             Status = "SUBMITTED",
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             PartTwo = new PartTwo { InspectionRequired = "Required" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedDeclration }],
         };
@@ -100,7 +100,7 @@ public class TransitImportsTests : IntegrationTestBase
         var updatedImportPreNotification = new ImportPreNotification
         {
             Status = updatedStatus,
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             PartTwo = new PartTwo { InspectionRequired = "Required" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = expectedDeclration }],
         };

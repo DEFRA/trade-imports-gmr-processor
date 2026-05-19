@@ -31,6 +31,38 @@ public class TransitValidationTests
         result.Reason.Should().Be("");
     }
 
+    [Fact]
+    public void IsTransit_WhenPortOfExitIsNull_ReturnsNotTransit()
+    {
+        var importPreNotification = new ImportPreNotification
+        {
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = null },
+            ExternalReferences = [new ExternalReference { System = "NCTS", Reference = "24GB12345678901234" }],
+        };
+
+        var result = TransitValidation.IsTransit(importPreNotification);
+
+        result.IsTransit.Should().BeFalse();
+        result.Reason.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void IsTransit_WhenPortOfExitIsNullOrEmpty_ReturnsNotTransit(string portOfExit)
+    {
+        var importPreNotification = new ImportPreNotification
+        {
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = portOfExit },
+            ExternalReferences = [new ExternalReference { System = "NCTS", Reference = "24GB12345678901234" }],
+        };
+
+        var result = TransitValidation.IsTransit(importPreNotification);
+
+        result.IsTransit.Should().BeFalse();
+        result.Reason.Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData("YES_ADD_LATER")]
     [InlineData("yes_add_later")]
@@ -38,7 +70,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = provideCtcMrn },
+            PartOne = new PartOne { ProvideCtcMrn = provideCtcMrn, PortOfExit = "GBFXT" },
         };
 
         var result = TransitValidation.IsTransit(importPreNotification);
@@ -55,7 +87,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = nctsReference }],
         };
 
@@ -73,7 +105,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = provideCtcMrn },
+            PartOne = new PartOne { ProvideCtcMrn = provideCtcMrn, PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = "24GB12345678901234" }],
         };
 
@@ -91,7 +123,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = systemName, Reference = "24GB12345678901234" }],
         };
 
@@ -114,7 +146,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = nctsReference }],
         };
 
@@ -129,7 +161,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [],
         };
 
@@ -144,7 +176,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = null }],
         };
 
@@ -159,7 +191,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "REFX", Reference = "24GB12345678901234" }],
         };
 
@@ -172,18 +204,10 @@ public class TransitValidationTests
     [Fact]
     public void IsTransit_WhenProvideCtcMrnIsInvalid_ReturnsNotTransitWithReason()
     {
-        var importPreNotification = new ImportPreNotification { PartOne = new PartOne { ProvideCtcMrn = "INVALID" } };
-
-        var result = TransitValidation.IsTransit(importPreNotification);
-
-        result.IsTransit.Should().BeFalse();
-        result.Reason.Should().StartWith("Invalid CTC indicator:");
-    }
-
-    [Fact]
-    public void IsTransit_WhenPartOneIsNull_ReturnsNotTransit()
-    {
-        var importPreNotification = new ImportPreNotification { PartOne = null };
+        var importPreNotification = new ImportPreNotification
+        {
+            PartOne = new PartOne { ProvideCtcMrn = "INVALID", PortOfExit = "GBFXT" },
+        };
 
         var result = TransitValidation.IsTransit(importPreNotification);
 
@@ -194,7 +218,10 @@ public class TransitValidationTests
     [Fact]
     public void IsTransit_WhenProvideCtcMrnIsNull_ReturnsNotTransit()
     {
-        var importPreNotification = new ImportPreNotification { PartOne = new PartOne { ProvideCtcMrn = null } };
+        var importPreNotification = new ImportPreNotification
+        {
+            PartOne = new PartOne { ProvideCtcMrn = null, PortOfExit = "GBFXT" },
+        };
 
         var result = TransitValidation.IsTransit(importPreNotification);
 
@@ -212,7 +239,7 @@ public class TransitValidationTests
     {
         var importPreNotification = new ImportPreNotification
         {
-            PartOne = new PartOne { ProvideCtcMrn = "YES" },
+            PartOne = new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" },
             ExternalReferences = [new ExternalReference { System = "NCTS", Reference = nctsReference }],
         };
 

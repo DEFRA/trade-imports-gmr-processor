@@ -150,7 +150,7 @@ public abstract class IntegrationTestBase
             .ImportPreNotificationFixture(chedReference)
             .WithMrn(mrn)
             .With(x => x.Status, "SUBMITTED")
-            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(x => x.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .Create();
 
         configure?.Invoke(importPreNotification);
