@@ -24,9 +24,9 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 #v6
       - name: Test
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5
         with:
           dotnet-version: |
             10.0
@@ -45,7 +45,7 @@ jobs:
           docker compose up -d --build
           dotnet test --filter "Category=IntegrationTests"
       - name: Build and Publish
-        uses: DEFRA/cdp-build-action/build@main
+        uses: DEFRA/cdp-build-action/build@5f3ba75f66a3ef96855322c137727ff996cc2995
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
   sonarcloud-scan:
