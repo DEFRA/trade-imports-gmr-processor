@@ -30,6 +30,11 @@ public static class TransitValidation
 
     public static TransitResult IsTransit(ImportPreNotification importPreNotification)
     {
+        if (string.IsNullOrWhiteSpace(importPreNotification.PartOne?.PortOfExit))
+        {
+            return TransitResult.NotTransit();
+        }
+
         var provideCtcMrn = importPreNotification.PartOne?.ProvideCtcMrn?.Trim().ToUpperInvariant() ?? string.Empty;
 
         return provideCtcMrn switch

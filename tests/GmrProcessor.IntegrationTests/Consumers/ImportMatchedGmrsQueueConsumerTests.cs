@@ -101,7 +101,7 @@ public class ImportMatchedGmrsQueueConsumerTests(ServiceBusFixture serviceBusFix
         var transitImportPreNotification = ImportPreNotificationFixtures
             .ImportPreNotificationFixture(expectedTransitReference)
             .With(i => i.Status, "SUBMITTED")
-            .With(i => i.PartOne, new PartOne { ProvideCtcMrn = "YES" })
+            .With(i => i.PartOne, new PartOne { ProvideCtcMrn = "YES", PortOfExit = "GBFXT" })
             .With(i => i.ExternalReferences, [new ExternalReference { System = "NCTS", Reference = expectedMrn }]);
 
         var resourceEvent = ImportPreNotificationFixtures
